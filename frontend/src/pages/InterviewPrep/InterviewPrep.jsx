@@ -1,0 +1,281 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import moment from "moment";
+import { AnimatePresence, motion } from "framer-motion";
+import { LuCircleAlert, LuListCollapse } from "react-icons/lu";
+import SpinnerLoader from "../../components/loaders/SpinnerLoader";
+import { toast } from "react-hot-toast";
+import DashboardLayout from "../../components/layouts/DashboardLayout";
+import RoleInfoHeader from "./components/RoleInfoHeader";
+import axiosInstance from "../../utils/axioInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+import QuestionCard from "../../components/cards/QuestionCard";
+import Drawer from "../../components/Drawer";
+import SkeletonLoader from "../../components/loaders/SkeletonLoader";
+import AIResponsePreview from "./components/AIResponsePreview";
+import SetupInterviewModal from "./components/SetupInterviewModal";
+
+const InterviewPrep = () => {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+
+  const [sessionData, setSessionData] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [openLeanMoreDrawer, setOpenLeanMoreDrawer] = useState(false);
+  const [explanation, setExplanation] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUpdateLoader, setIsUpdateLoader] = useState(false);
+  const [openSetupModal, setOpenSetupModal] = useState(false);
+
+  const fetchSessionDetailsById = async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_PATHS.SESSION.GET_ONE(sessionId)
+      );
+      if (response.data && response.data.session) {
+        setSessionData(response.data.session);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const generateConceptExplanation = async (question) => {
+    try {
+      setErrorMsg("");
+      setExplanation(null);
+      setIsLoading(true);
+      setOpenLeanMoreDrawer(true);
+
+      const response = await axiosInstance.post(
+        API_PATHS.AI.GENERATE_EXPLANATION,
+        { question }
+      );
+
+      if (response.data && response.data.explanation) {
+        setExplanation(response.data);
+      } else {
+        setErrorMsg("No explanation received");
+      }
+    } catch (error) {
+      setExplanation(null);
+      setErrorMsg("Failed to generate explanation, Try again later");
+      console.error("Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleQuestionPinStatus = async (questionId) => {
+    try {
+      await axiosInstance.post(API_PATHS.QUESTION.PIN(questionId));
+      fetchSessionDetailsById();
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const uploadMoreQuestions = async () => {
+    try {
+      setIsUpdateLoader(true);
+      // ✅ Safely close Drawer & clear stale explanation when adding new questions
+      setOpenLeanMoreDrawer(false);
+      setExplanation(null);
+      setErrorMsg("");
+
+      const payload = {
+        role: sessionData?.role,
+        experience:
+          sessionData?.experience && sessionData.experience > 0
+            ? sessionData.experience
+            : 1,
+        topicsToFocus: Array.isArray(sessionData?.topicsToFocus)
+          ? sessionData.topicsToFocus.join(", ")
+          : sessionData?.topicsToFocus || "",
+        numberOfQuestions: 10,
+      };
+
+      console.log("Uploading more with:", payload);
+
+      const aiResponse = await axiosInstance.post(
+        API_PATHS.AI.GENERATE_QUESTIONS,
+        payload
+      );
+
+      const generatedQuestions = aiResponse.data;
+
+      await axiosInstance.post(API_PATHS.QUESTION.ADD_TO_SESSION, {
+        sessionId,
+        questions: generatedQuestions,
+      });
+
+      toast.success("Added More QA!!!");
+      fetchSessionDetailsById();
+    } catch (error) {
+      if (error.response && error.response.data.message) {
+        setErrorMsg(error.response.data.message);
+      } else {
+        setErrorMsg("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsUpdateLoader(false);
+    }
+  };
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchSessionDetailsById();
+    }
+  }, [sessionId]);
+
+  return (
+    <DashboardLayout>
+      <RoleInfoHeader
+        role={sessionData?.role || ""}
+        topicsToFocus={sessionData?.topicsToFocus || ""}
+        experience={sessionData?.experience || ""}
+        questions={sessionData?.questions || "_ _"}
+        description={sessionData?.description || ""}
+        lastUpdated={
+          sessionData?.updatedAt
+            ? moment(sessionData.updatedAt).format("Do MMM YYYY")
+            : ""
+        }
+        onStartInterview={() => setOpenSetupModal(true)}
+      />
+
+      <div className="container mx-auto px-4 pt-4 pb-4 md:px-0">
+        <h2 className="gap-4 mt-5 mb-10 font-semibold text-xl text-gray-900 dark:text-slate-100">
+          Interview Q & A
+        </h2>
+
+        <div className="flex flex-col md:flex-row gap-4 mt-5 mb-10">
+          <motion.div
+            className={`w-full transition-all duration-300 ${openLeanMoreDrawer ? "md:w-7/12" : "md:w-8/12"}`}
+          >
+            <AnimatePresence>
+              {sessionData?.questions?.map((data, index) => (
+                <motion.div
+                  key={data._id || index}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{
+                    duration: 0.4,
+                    type: "spring",
+                    stiffness: 100,
+                    delay: index * 0.1,
+                    damping: 15,
+                  }}
+                  layout
+                  layoutId={`question-${data._id || index}`}
+                >
+                  <QuestionCard
+                    index={index}
+                    question={data?.question}
+                    answer={data?.answer}
+                    onLearnMore={() =>
+                      generateConceptExplanation(data.question)
+                    }
+                    isPinned={data?.isPinned}
+                    onTogglePin={() => toggleQuestionPinStatus(data._id)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            <div className="flex items-center justify-center mt-5">
+              <button
+                className="flex items-center gap-3 text-sm text-white font-medium bg-black dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                disabled={isLoading || isUpdateLoader}
+                onClick={uploadMoreQuestions}
+              >
+                {isUpdateLoader ? (
+                  <SpinnerLoader />
+                ) : (
+                  <LuListCollapse className="text-lg" />
+                )}
+                Load More
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        <Drawer
+          isOpen={openLeanMoreDrawer}
+          onClose={() => setOpenLeanMoreDrawer(false)}
+          title={!isLoading && explanation ? explanation?.title : ""}
+        >
+          {errorMsg && (
+            <p className="flex gap-2 text-sm text-amber-600 font-medium">
+              <LuCircleAlert className="mt-1" /> {errorMsg}
+            </p>
+          )}
+
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <SkeletonLoader />
+            </motion.div>
+          )}
+
+          {!isLoading && explanation && (
+            <div className="mt-4 text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 px-5 py-3 rounded-lg">
+              <AIResponsePreview content={explanation?.explanation} />
+            </div>
+          )}
+        </Drawer>
+
+        {/* Past Attempts History Section */}
+        {sessionData?.attempts && sessionData.attempts.length > 0 && (
+          <div className="mt-20 mb-10">
+            <h2 className="gap-4 font-semibold text-xl mb-6 text-gray-900 dark:text-slate-100">
+              Past Mock Interviews
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sessionData.attempts.map((attempt, index) => (
+                <div 
+                  key={index}
+                  onClick={() => navigate(`/interview/${sessionId}/feedback`, { state: { interviewHistory: attempt.history, persona: attempt.persona, duration: attempt.duration } })}
+                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-blue-950/10 transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-lg">
+                      #{index + 1}
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-sm font-bold text-gray-900 dark:text-slate-100 capitalize">{attempt.persona} Persona</span>
+                      <span className="block text-xs text-gray-500 dark:text-slate-400">{moment(attempt.createdAt).fromNow()}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 pt-4 border-t border-gray-50 dark:border-slate-800">
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-black text-gray-900 dark:text-slate-50 leading-none">{attempt.avgScore}<span className="text-sm text-gray-400 dark:text-slate-500 font-medium">/10</span></span>
+                      <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mt-1">Avg Score</span>
+                    </div>
+                    <div className="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-black text-gray-900 dark:text-slate-50 leading-none">{attempt.avgConfidence}%</span>
+                      <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mt-1">Confidence</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <SetupInterviewModal 
+          isOpen={openSetupModal} 
+          onClose={() => setOpenSetupModal(false)} 
+          sessionId={sessionId}
+        />
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default InterviewPrep;
