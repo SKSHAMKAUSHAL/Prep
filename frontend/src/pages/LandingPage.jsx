@@ -90,7 +90,7 @@ const LandingPage = () => {
       id: 1,
       name: "Ashish Yadav",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Ashish&backgroundColor=b6e3f4",
-      comment: "NitroBot completely changed my preparation strategy. The real-time AI voice feedback helped me fix my pacing, and the interactive concept maps made answering system design questions intuitive.",
+      comment: "Prep completely changed my preparation strategy. The real-time AI voice feedback helped me fix my pacing, and the interactive concept maps made answering system design questions intuitive.",
       stars: 5,
     },
     {
@@ -111,7 +111,7 @@ const LandingPage = () => {
       id: 4,
       name: "Shivansh Mehta",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Shivansh&backgroundColor=ffdfbf",
-      comment: "Highly recommend NitroBot to anyone preping for senior loops. The mock interview folders allowed me to organize and revisit my weaknesses. Crucial tool for tech interviews.",
+      comment: "Highly recommend Prep to anyone preping for senior loops. The mock interview folders allowed me to organize and revisit my weaknesses. Crucial tool for tech interviews.",
       stars: 5,
     },
     {
@@ -146,7 +146,7 @@ const LandingPage = () => {
       id: 9,
       name: "Mayank Sharma",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Mayank&backgroundColor=ffdfbf",
-      comment: "NitroBot's adaptive interview engine feels incredibly close to a real senior engineer round. The dynamic feedback is outstanding and really tests your conceptual depth.",
+      comment: "Prep's adaptive interview engine feels incredibly close to a real senior engineer round. The dynamic feedback is outstanding and really tests your conceptual depth.",
       stars: 4.5,
     }
   ];
@@ -176,7 +176,7 @@ const LandingPage = () => {
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
               <LuSparkles className="text-white text-lg" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50">NitroBot</span>
+            <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50">Prep</span>
           </div>
           
           <div className="flex items-center gap-4">
@@ -231,7 +231,7 @@ const LandingPage = () => {
               </h1>
               
               <p className="text-lg lg:text-xl text-gray-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Experience real-time voice interviews, get deeply personalized feedback, and track your progress. NitroBot turns anxiety into confidence.
+                Experience real-time voice interviews, get deeply personalized feedback, and track your progress. Prep turns anxiety into confidence.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
@@ -301,7 +301,7 @@ const LandingPage = () => {
                     <div className="w-3 h-3 rounded-full bg-green-400"></div>
                   </div>
                   <div className="px-4 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider">
-                    NITROBOT SIMULATOR V1.0
+                    Prep SIMULATOR V1.0
                   </div>
                 </div>
 
@@ -616,7 +616,7 @@ const LandingPage = () => {
               Loved by ambitious professionals
             </h2>
             <p className="text-xl text-gray-600 dark:text-slate-400">
-              See how NitroBot helps developers, DevOps, and product managers ace their interviews at top-tier companies.
+              See how Prep helps developers, DevOps, and product managers ace their interviews at top-tier companies.
             </p>
           </div>
 
@@ -725,7 +725,7 @@ const LandingPage = () => {
               </h2>
 
               <p className="text-lg text-gray-600 dark:text-slate-400 leading-relaxed">
-                We're here to help you get the absolute most out of NitroBot. Send us a message, and our team will get back to you within 24 hours.
+                We're here to help you get the absolute most out of Prep. Send us a message, and our team will get back to you within 24 hours.
               </p>
 
               <div className="space-y-6 pt-4">
@@ -854,7 +854,7 @@ const LandingPage = () => {
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                   <LuSparkles className="text-white" />
                 </div>
-                <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50">NitroBot</span>
+                <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50">Prep</span>
               </div>
               <p className="text-gray-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm">
                 Next-generation interview preparation engine simulating actual industry loops, deep AI diagnostics, and confidence diagnostics.

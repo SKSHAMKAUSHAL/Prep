@@ -29,7 +29,7 @@ const SetupInterviewModal = ({ isOpen, onClose, sessionId }) => {
             <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc pl-4">
               <li>This is a live voice-based mock interview.</li>
               <li>You can speak normally. The AI will listen, evaluate, and respond.</li>
-              <li><span className="font-semibold">Stuck?</span> Just ask Nitro for a hint or help.</li>
+              <li><span className="font-semibold">Stuck?</span> Just ask Prep for a hint or help.</li>
             </ul>
           </div>
         </div>

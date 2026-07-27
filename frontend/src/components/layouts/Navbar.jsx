@@ -15,7 +15,7 @@ const Navbar = () => {
             <LuSparkles className="text-white text-lg" />
           </div>
           <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            NitroBot
+            Prep
           </span>
         </Link>
         <div className="flex items-center gap-4">

@@ -49,7 +49,7 @@ app.get("/ping", (req, res) => {
 
 // Welcome route (catch-all, must be last)
 app.use('/', (req, res) => {
-  res.send('Welcome to the Nitro Bot !');
+  res.send('Welcome to the Prep !');
 });
 
 app.listen(PORT, () => {
