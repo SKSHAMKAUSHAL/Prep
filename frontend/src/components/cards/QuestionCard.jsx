@@ -32,41 +32,41 @@ const QuestionCard = ({
 
   return (
     <>
-      <div className="group sketch-border sketch-shadow bg-white dark:bg-slate-900 mb-6 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_var(--color-border)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.03)] dark:border-slate-800">
-        <div className="p-6">
+      <div className="group border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] mb-4 overflow-hidden transition-colors duration-200 hover:border-[var(--color-accent)]/30">
+        <div className="p-5">
           <div className="flex items-start justify-between cursor-pointer">
-            <div className="flex items-start gap-4 flex-1" onClick={toggleExpand}>
-              <div className="flex-shrink-0 w-10 h-10 bg-[var(--color-accent-blue)] dark:bg-blue-950/40 border-2 border-black dark:border-slate-700 rounded-lg flex items-center justify-center mt-0.5">
-                <span className="text-xs font-black text-black dark:text-blue-400">Q{index !== undefined ? index + 1 : ""}</span>
-              </div>
+            <div className="flex items-start gap-3 flex-1" onClick={toggleExpand}>
+              <span className="flex-shrink-0 text-xs font-semibold text-[var(--color-text-muted)] tabular-nums mt-0.5 w-6">
+                {index !== undefined ? String(index + 1).padStart(2, '0') : ""}
+              </span>
               <div className="flex-1">
-                <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 leading-relaxed cursor-pointer transition-colors duration-300 pt-1">
+                <h3 className="text-sm font-medium text-[var(--color-text-primary)] leading-relaxed cursor-pointer">
                   {question}
                 </h3>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 ml-4">
+            <div className="flex items-center gap-1.5 ml-3">
               <div
-                className={`flex items-center gap-2 transition-all duration-300 ${
+                className={`flex items-center gap-1.5 transition-opacity duration-200 ${
                   isExpanded
-                    ? "opacity-100 translate-x-0"
-                    : "opacity-0 md:opacity-0 md:group-hover:opacity-100 translate-x-2 md:group-hover:translate-x-0"
+                    ? "opacity-100"
+                    : "opacity-0 md:group-hover:opacity-100"
                 }`}
               >
                 <button
-                  className={`flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg border-2 border-black dark:border-slate-700 transition-all duration-300 hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none ${
+                  className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors duration-200 ${
                     isPinned
-                      ? "bg-[var(--color-accent-yellow)] dark:bg-amber-500/20 text-black dark:text-amber-400 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)]"
-                      : "bg-white dark:bg-slate-800 text-black dark:text-slate-300 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)]"
+                      ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400"
+                      : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]/30"
                   }`}
                   onClick={onTogglePin}
                   title={isPinned ? "Unpin question" : "Pin question"}
                 >
                   {isPinned ? (
-                    <LuPinOff className="text-sm" />
+                    <LuPinOff className="text-xs" />
                   ) : (
-                    <LuPin className="text-sm" />
+                    <LuPin className="text-xs" />
                   )}
                   <span className="hidden sm:block">
                     {isPinned ? "Pinned" : "Pin"}
@@ -74,26 +74,26 @@ const QuestionCard = ({
                 </button>
 
                 <button
-                  className="flex items-center gap-2 text-xs font-bold text-black dark:text-purple-300 bg-[var(--color-accent-pink)] dark:bg-purple-950/40 px-3 py-2 rounded-lg border-2 border-black dark:border-slate-700 shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all duration-300"
+                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-2.5 py-1.5 rounded-md border border-transparent hover:border-[var(--color-accent)]/20 transition-colors duration-200"
                   onClick={() => {
                     setIsExpanded(true);
                     onLearnMore();
                   }}
                   title="Get AI insights"
                 >
-                  <LuSparkles className="text-sm" />
+                  <LuSparkles className="text-xs" />
                   <span className="hidden sm:block">Learn More</span>
                 </button>
               </div>
 
               <button
-                className="flex-shrink-0 w-10 h-10 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
+                className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] rounded-md hover:bg-[var(--color-bg)] transition-colors duration-200"
                 onClick={toggleExpand}
                 title={isExpanded ? "Collapse answer" : "Expand answer"}
               >
                 <LuChevronDown
-                  size={20}
-                  className={`transform transition-transform duration-500 ${
+                  size={16}
+                  className={`transform transition-transform duration-300 ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 />
@@ -102,33 +102,26 @@ const QuestionCard = ({
           </div>
 
           <div
-            className="overflow-hidden transition-all duration-500 ease-out"
+            className="overflow-hidden transition-all duration-400 ease-out"
             style={{ maxHeight: `${height}px` }}
           >
             <div
               ref={contentRef}
-              className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800"
+              className="mt-4 pt-4 border-t border-[var(--color-border)]"
             >
-              <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-950 dark:to-blue-950/10 rounded-xl p-6 border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">A</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              <div className="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <span className="text-xs font-medium text-[var(--color-text-muted)]">
                     AI Response
                   </span>
                 </div>
-                <div className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                <div className="text-[var(--color-text-secondary)] leading-relaxed">
                   <AIResponsePreview content={answer} />
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {isExpanded && (
-          <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 animate-pulse"></div>
-        )}
       </div>
     </>
   );

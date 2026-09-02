@@ -78,7 +78,6 @@ const InterviewPrep = () => {
   const uploadMoreQuestions = async () => {
     try {
       setIsUpdateLoader(true);
-      // ✅ Safely close Drawer & clear stale explanation when adding new questions
       setOpenLeanMoreDrawer(false);
       setExplanation(null);
       setErrorMsg("");
@@ -95,8 +94,6 @@ const InterviewPrep = () => {
         numberOfQuestions: 10,
       };
 
-      console.log("Uploading more with:", payload);
-
       const aiResponse = await axiosInstance.post(
         API_PATHS.AI.GENERATE_QUESTIONS,
         payload
@@ -109,7 +106,7 @@ const InterviewPrep = () => {
         questions: generatedQuestions,
       });
 
-      toast.success("Added More QA!!!");
+      toast.success("Added more questions");
       fetchSessionDetailsById();
     } catch (error) {
       if (error.response && error.response.data.message) {
@@ -144,27 +141,27 @@ const InterviewPrep = () => {
         onStartInterview={() => setOpenSetupModal(true)}
       />
 
-      <div className="container mx-auto px-4 pt-4 pb-4 md:px-0">
-        <h2 className="gap-4 mt-5 mb-10 font-semibold text-xl text-gray-900 dark:text-slate-100">
-          Interview Q & A
+      <div className="container mx-auto px-6 pt-6 pb-10 max-w-6xl">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-5">
+          Questions ({sessionData?.questions?.length || 0})
         </h2>
 
-        <div className="flex flex-col md:flex-row gap-4 mt-5 mb-10">
+        <div className="flex flex-col md:flex-row gap-4">
           <motion.div
-            className={`w-full transition-all duration-300 ${openLeanMoreDrawer ? "md:w-7/12" : "md:w-8/12"}`}
+            className={`w-full transition-all duration-300 ${openLeanMoreDrawer ? "md:w-7/12" : "md:w-full"}`}
           >
             <AnimatePresence>
               {sessionData?.questions?.map((data, index) => (
                 <motion.div
                   key={data._id || index}
-                  initial={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: -12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{
-                    duration: 0.4,
+                    duration: 0.3,
                     type: "spring",
                     stiffness: 100,
-                    delay: index * 0.1,
+                    delay: index * 0.05,
                     damping: 15,
                   }}
                   layout
@@ -184,16 +181,16 @@ const InterviewPrep = () => {
               ))}
             </AnimatePresence>
 
-            <div className="flex items-center justify-center mt-5">
+            <div className="flex items-center justify-center mt-6">
               <button
-                className="flex items-center gap-3 text-sm text-white font-medium bg-black dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] border border-[var(--color-border)] px-4 py-2 rounded-lg hover:bg-[var(--color-bg)] transition-colors"
                 disabled={isLoading || isUpdateLoader}
                 onClick={uploadMoreQuestions}
               >
                 {isUpdateLoader ? (
                   <SpinnerLoader />
                 ) : (
-                  <LuListCollapse className="text-lg" />
+                  <LuListCollapse className="w-4 h-4" />
                 )}
                 Load More
               </button>
@@ -207,7 +204,7 @@ const InterviewPrep = () => {
           title={!isLoading && explanation ? explanation?.title : ""}
         >
           {errorMsg && (
-            <p className="flex gap-2 text-sm text-amber-600 font-medium">
+            <p className="flex gap-2 text-sm text-amber-600 dark:text-amber-400 font-medium">
               <LuCircleAlert className="mt-1" /> {errorMsg}
             </p>
           )}
@@ -223,43 +220,43 @@ const InterviewPrep = () => {
           )}
 
           {!isLoading && explanation && (
-            <div className="mt-4 text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 px-5 py-3 rounded-lg">
-              <AIResponsePreview content={explanation?.explanation} />
-            </div>
+            <AIResponsePreview
+              content={explanation?.explanation}
+              summary={explanation?.summary}
+              keyPoints={explanation?.keyPoints}
+              questionTitle={explanation?.title}
+            />
           )}
         </Drawer>
 
-        {/* Past Attempts History Section */}
+        {/* Past Attempts */}
         {sessionData?.attempts && sessionData.attempts.length > 0 && (
-          <div className="mt-20 mb-10">
-            <h2 className="gap-4 font-semibold text-xl mb-6 text-gray-900 dark:text-slate-100">
-              Past Mock Interviews
+          <div className="mt-16 mb-8">
+            <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4">
+              Past Interviews
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
               {sessionData.attempts.map((attempt, index) => (
-                <div 
+                <div
                   key={index}
                   onClick={() => navigate(`/interview/${sessionId}/feedback`, { state: { interviewHistory: attempt.history, persona: attempt.persona, duration: attempt.duration } })}
-                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-blue-950/10 transition-all duration-300 cursor-pointer group"
+                  className="flex items-center justify-between p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg hover:border-[var(--color-accent)]/30 transition-colors cursor-pointer group"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-lg">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-medium text-[var(--color-text-muted)] tabular-nums w-6">
                       #{index + 1}
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-sm font-bold text-gray-900 dark:text-slate-100 capitalize">{attempt.persona} Persona</span>
-                      <span className="block text-xs text-gray-500 dark:text-slate-400">{moment(attempt.createdAt).fromNow()}</span>
+                    </span>
+                    <div>
+                      <span className="text-sm font-medium text-[var(--color-text-primary)] capitalize">{attempt.persona}</span>
+                      <span className="text-xs text-[var(--color-text-muted)] ml-2">{moment(attempt.createdAt).fromNow()}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 pt-4 border-t border-gray-50 dark:border-slate-800">
-                    <div className="flex flex-col">
-                      <span className="text-2xl font-black text-gray-900 dark:text-slate-50 leading-none">{attempt.avgScore}<span className="text-sm text-gray-400 dark:text-slate-500 font-medium">/10</span></span>
-                      <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mt-1">Avg Score</span>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">{attempt.avgScore}<span className="text-xs text-[var(--color-text-muted)] font-normal">/10</span></span>
                     </div>
-                    <div className="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
-                    <div className="flex flex-col">
-                      <span className="text-2xl font-black text-gray-900 dark:text-slate-50 leading-none">{attempt.avgConfidence}%</span>
-                      <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mt-1">Confidence</span>
+                    <div className="text-right">
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">{attempt.avgConfidence}%</span>
                     </div>
                   </div>
                 </div>
@@ -268,9 +265,9 @@ const InterviewPrep = () => {
           </div>
         )}
 
-        <SetupInterviewModal 
-          isOpen={openSetupModal} 
-          onClose={() => setOpenSetupModal(false)} 
+        <SetupInterviewModal
+          isOpen={openSetupModal}
+          onClose={() => setOpenSetupModal(false)}
           sessionId={sessionId}
         />
       </div>

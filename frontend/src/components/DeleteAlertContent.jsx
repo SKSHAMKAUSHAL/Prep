@@ -2,11 +2,11 @@ import React from "react";
 
 const DeleteAlertContent = ({ content, onDelete }) => {
   return (
-    <div className="p-2">
-      <p className="text-[14px]"> {content}</p>
+    <div className="p-4">
+      <p className="text-sm text-[var(--color-text-secondary)]">{content}</p>
 
-      <div className="flex justify-end m-4">
-        <button type="button" className="btn-small pb-2" onClick={onDelete}>
+      <div className="flex justify-end gap-2 mt-5">
+        <button type="button" className="btn-small bg-[var(--color-error)] hover:bg-red-600" onClick={onDelete}>
           Delete
         </button>
       </div>

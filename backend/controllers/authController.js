@@ -131,47 +131,135 @@ const axios = require('axios');
 
 const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body; // This is the access_token from frontend
+    const { token } = req.body;
     
-    // Fetch user info from Google using the access token
-    const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    const { sub: googleId, email, name, picture: profileImageUrl } = googleResponse.data;
-    
-    // Check if user exists by email or googleId
-    let user = await User.findOne({ $or: [{ email }, { googleId }] });
-    
+    if (!token) {
+      return res.status(400).json({ message: "Token is required for Google login" });
+    }
+
+    let googleId = null;
+    let email = null;
+    let name = null;
+    let profileImageUrl = null;
+
+    // 1. Check if token is a JWT (ID Token)
+    if (typeof token === 'string' && token.split('.').length === 3) {
+      try {
+        const ticket = await client.verifyIdToken({
+          idToken: token,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        googleId = payload.sub;
+        email = payload.email;
+        name = payload.name || payload.given_name;
+        profileImageUrl = payload.picture;
+      } catch (jwtErr) {
+        console.warn("JWT verification failed, falling back to decoding / userinfo:", jwtErr.message);
+        const decoded = jwt.decode(token);
+        if (decoded && (decoded.email || decoded.sub)) {
+          googleId = decoded.sub;
+          email = decoded.email;
+          name = decoded.name || decoded.given_name;
+          profileImageUrl = decoded.picture;
+        }
+      }
+    }
+
+    // 2. If not obtained via JWT, fetch from Google userinfo endpoint using access token
+    if (!email && !googleId) {
+      try {
+        const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = googleResponse.data;
+        googleId = data.sub || data.id;
+        email = data.email;
+        name = data.name || data.given_name;
+        profileImageUrl = data.picture;
+      } catch (axiosErr1) {
+        // Fallback to v2 userinfo endpoint
+        try {
+          const googleResponseV2 = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = googleResponseV2.data;
+          googleId = data.id || data.sub;
+          email = data.email;
+          name = data.name || data.given_name;
+          profileImageUrl = data.picture;
+        } catch (axiosErr2) {
+          console.error("Google userinfo fetch failed:", axiosErr1.response?.data || axiosErr1.message);
+          return res.status(401).json({ 
+            message: "Invalid or expired Google token", 
+            details: axiosErr1.response?.data || axiosErr1.message 
+          });
+        }
+      }
+    }
+
+    if (!email) {
+      return res.status(400).json({ message: "Unable to retrieve email from Google profile" });
+    }
+
+    // Fallback for name if not provided
+    if (!name) {
+      name = email.split('@')[0];
+    }
+
+    // Check if user exists by email or googleId safely
+    const query = [];
+    if (email) query.push({ email });
+    if (googleId) query.push({ googleId });
+
+    let user = await User.findOne({ $or: query });
+
     if (!user) {
-      // Create new user if doesn't exist
-      user = await User.create({
+      // Create new user
+      const newUserData = {
         name,
         email,
-        googleId,
-        profileImageUrl,
-      });
-    } else if (!user.googleId) {
-      // If user exists with email but no googleId (registered manually before), link them
-      user.googleId = googleId;
-      if (!user.profileImageUrl) user.profileImageUrl = profileImageUrl;
-      await user.save();
+        profileImageUrl: profileImageUrl || null,
+      };
+      if (googleId) newUserData.googleId = googleId;
+
+      user = await User.create(newUserData);
+    } else {
+      let needsSave = false;
+      if (googleId && !user.googleId) {
+        user.googleId = googleId;
+        needsSave = true;
+      }
+      if (profileImageUrl && !user.profileImageUrl) {
+        user.profileImageUrl = profileImageUrl;
+        needsSave = true;
+      }
+      if (!user.name && name) {
+        user.name = name;
+        needsSave = true;
+      }
+      if (needsSave) {
+        await user.save();
+      }
     }
-    
+
     // Generate JWT token
     const jwtToken = generateToken(user._id);
-    
-    res.json({
+
+    return res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       profileImageUrl: user.profileImageUrl,
       token: jwtToken,
     });
-    
+
   } catch (error) {
     console.error("💥 GOOGLE LOGIN ERROR:", error);
-    res.status(500).json({ message: "Server error during Google login", error: error.message });
+    return res.status(500).json({
+      message: "Server error during Google login",
+      error: error.message
+    });
   }
 };
 

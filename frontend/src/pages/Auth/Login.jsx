@@ -21,8 +21,9 @@ const Login = ({ setCurrentPage }) => {
     onSuccess: async (tokenResponse) => {
       try {
         setIsLoading(true);
+        const tokenToSend = tokenResponse?.access_token || tokenResponse?.credential || tokenResponse?.code;
         const response = await axiosInstance.post(API_PATHS.AUTH.GOOGLE_LOGIN, {
-          token: tokenResponse.access_token,
+          token: tokenToSend,
         });
 
         const { token } = response.data;
@@ -32,13 +33,16 @@ const Login = ({ setCurrentPage }) => {
           navigate("/dashboard");
         }
       } catch (err) {
-        console.error(err);
-        setError("Google Login failed.");
+        console.error("Google Login Error:", err);
+        setError(err.response?.data?.message || "Google Login failed.");
       } finally {
         setIsLoading(false);
       }
     },
-    onError: () => setError("Google Login failed.")
+    onError: (error) => {
+      console.error("Google OAuth Error:", error);
+      setError("Google Login failed.");
+    }
   });
 
   const handleLogin = async (e) => {
@@ -81,19 +85,28 @@ const Login = ({ setCurrentPage }) => {
     }
   };
 
+  const handleSwitchToSignup = (e) => {
+    e.preventDefault();
+    if (setCurrentPage) {
+      setCurrentPage("signup");
+    } else {
+      navigate("/signup");
+    }
+  };
+
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full px-6 py-8"
+      transition={{ duration: 0.3 }}
+      className="w-full px-5 py-6"
     >
-      <div className="text-center mb-8">
-        <h3 className="text-3xl font-bold text-gray-900 dark:text-slate-50 mb-2 tracking-tight">Welcome Back</h3>
-        <p className="text-gray-500 dark:text-slate-400">Sign in to continue your interview prep.</p>
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">Welcome back</h3>
+        <p className="text-xs text-[var(--color-text-muted)]">Sign in to continue your interview prep.</p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-5">
+      <form onSubmit={handleLogin} className="space-y-1">
         <Input
           value={email}
           onChange={({ target }) => setEmail(target.value)}
@@ -112,7 +125,7 @@ const Login = ({ setCurrentPage }) => {
         {error && (
           <motion.p 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-100 dark:border-red-900/50"
+            className="text-sm text-[var(--color-error)] bg-red-50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/30"
           >
             {error}
           </motion.p>
@@ -121,26 +134,25 @@ const Login = ({ setCurrentPage }) => {
         <button 
           type="submit" 
           disabled={isLoading}
-          className="premium-btn"
+          className="premium-btn !mt-4"
         >
           {isLoading ? "Signing in..." : "Sign In"}
         </button>
       </form>
 
-      <div className="mt-6 flex items-center justify-center space-x-4">
-        <div className="flex-1 border-t border-gray-200 dark:border-slate-800"></div>
-        <span className="text-sm text-gray-400 dark:text-slate-500">or continue with</span>
-        <div className="flex-1 border-t border-gray-200 dark:border-slate-800"></div>
+      <div className="mt-5 flex items-center justify-center space-x-3">
+        <div className="flex-1 border-t border-[var(--color-border)]"></div>
+        <span className="text-[11px] text-[var(--color-text-muted)]">or</span>
+        <div className="flex-1 border-t border-[var(--color-border)]"></div>
       </div>
 
-      {/* For Google Login, using the standard Google component is easiest to get the idToken for the backend */}
-      <div className="mt-6">
+      <div className="mt-4">
         <button 
           type="button"
           onClick={() => googleLogin()}
           className="premium-btn-secondary"
         >
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -150,14 +162,11 @@ const Login = ({ setCurrentPage }) => {
         </button>
       </div>
 
-      <p className="text-sm text-gray-600 dark:text-slate-400 mt-8 text-center">
-        Don’t have an account?{" "}
+      <p className="text-xs text-[var(--color-text-muted)] mt-6 text-center">
+        Don't have an account?{" "}
         <button
-          className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-          onClick={(e) => {
-            e.preventDefault();
-            setCurrentPage("signup");
-          }}
+          className="font-medium text-[var(--color-accent)] hover:underline transition-colors"
+          onClick={handleSwitchToSignup}
         >
           Sign Up
         </button>

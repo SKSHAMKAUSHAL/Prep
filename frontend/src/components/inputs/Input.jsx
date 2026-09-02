@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaEye, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { FaEye, FaRegEyeSlash } from "react-icons/fa";
 
 const Input = ({ value, onChange, label, placeholder, type, icon: Icon }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,24 +9,24 @@ const Input = ({ value, onChange, label, placeholder, type, icon: Icon }) => {
   };
 
   return (
-    <div className="mb-4">
-      <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 block">{label}</label>
+    <div className="mb-3">
+      <label className="text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 block">{label}</label>
       <div className="relative flex items-center">
         {Icon && (
-          <div className="absolute left-3 text-gray-400 flex items-center justify-center">
-            <Icon size={18} />
+          <div className="absolute left-3 text-[var(--color-text-muted)] flex items-center justify-center">
+            <Icon size={16} />
           </div>
         )}
         <input
           type={type === "password" ? (showPassword ? "text" : "password") : type}
           placeholder={placeholder}
-          className={`premium-input pr-10 ${Icon ? "!pl-10" : ""}`}
+          className={`premium-input ${Icon ? "!pl-9" : ""} ${type === "password" ? "!pr-9" : ""}`}
           value={value}
           onChange={(e) => onChange(e)}
         />
         {type === "password" && (
-          <div className="absolute right-3 cursor-pointer text-gray-400 hover:text-gray-200 dark:hover:text-gray-300 transition-colors" onClick={toggleShowPassword}>
-            {showPassword ? <FaEye size={18} /> : <FaRegEyeSlash size={18} />}
+          <div className="absolute right-3 cursor-pointer text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors" onClick={toggleShowPassword}>
+            {showPassword ? <FaEye size={16} /> : <FaRegEyeSlash size={16} />}
           </div>
         )}
       </div>

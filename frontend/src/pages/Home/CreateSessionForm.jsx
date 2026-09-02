@@ -1,22 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Input from "../../components/inputs/Input";
-import { LuSparkles, LuBriefcase, LuClock, LuTarget, LuFileText } from "react-icons/lu";
+import { LuBriefcase, LuClock, LuTarget, LuFileText, LuSparkles } from "react-icons/lu";
 import SpinnerLoader from "../../components/loaders/SpinnerLoader";
 import axiosInstance from "../../utils/axioInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 
-const CreateSessionForm = () => {
+const CreateSessionForm = ({ initialData }) => {
   const [formData, setFormData] = useState({
-    role: "",
-    experience: "",
-    topicsToFocus: "",
-    description: "",
+    role: initialData?.role || "",
+    experience: initialData?.experience || "",
+    topicsToFocus: initialData?.topicsToFocus || "",
+    description: initialData?.description || "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        role: initialData.role || "",
+        experience: initialData.experience || "",
+        topicsToFocus: initialData.topicsToFocus || "",
+        description: initialData.description || "",
+      });
+    }
+  }, [initialData]);
 
   const handleChange = (key, value) => {
     setFormData((prevData) => ({
@@ -71,26 +82,26 @@ const CreateSessionForm = () => {
   };
 
   return (
-    <div className="w-full px-2 sm:px-4 py-4">
-      {/* Header Section */}
-      <div className="text-center mb-8">
-        <div className="mx-auto w-14 h-14 bg-gradient-to-tr from-blue-100 to-indigo-50 dark:from-blue-950 dark:to-indigo-950/40 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-white dark:border-slate-800">
-          <LuSparkles className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+    <div className="w-full p-5">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <LuSparkles className="text-[var(--color-accent)] w-4 h-4" />
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            Configure Interview Track
+          </h3>
         </div>
-        <h3 className="text-2xl font-extrabold text-gray-900 dark:text-slate-50 tracking-tight">
-          Create AI Interview
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2 mx-auto leading-relaxed max-w-[90%]">
-          Fill out your details to unlock a personalized set of AI-generated questions.
+        <p className="text-xs text-[var(--color-text-muted)]">
+          Fill in your target role and focus topics to generate tailored AI questions.
         </p>
       </div>
 
-      <form onSubmit={handleCreateSession} className="flex flex-col gap-1 px-1">
+      <form onSubmit={handleCreateSession} className="flex flex-col gap-1">
         <Input
           value={formData.role}
           onChange={({ target }) => handleChange("role", target.value)}
           label="Target Role"
-          placeholder="e.g., Full-Stack Developer"
+          placeholder="e.g., Senior Frontend Engineer"
           type="text"
           icon={LuBriefcase}
         />
@@ -99,7 +110,7 @@ const CreateSessionForm = () => {
           value={formData.experience}
           onChange={({ target }) => handleChange("experience", target.value)}
           label="Years of Experience"
-          placeholder="e.g., 2"
+          placeholder="e.g., 3"
           type="number"
           icon={LuClock}
         />
@@ -108,7 +119,7 @@ const CreateSessionForm = () => {
           value={formData.topicsToFocus}
           onChange={({ target }) => handleChange("topicsToFocus", target.value)}
           label="Topics to Focus On"
-          placeholder="e.g., React, Node.js"
+          placeholder="e.g., React, System Design, TypeScript, Performance"
           type="text"
           icon={LuTarget}
         />
@@ -116,21 +127,21 @@ const CreateSessionForm = () => {
         <Input
           value={formData.description}
           onChange={({ target }) => handleChange("description", target.value)}
-          label="Description (Optional)"
-          placeholder="Any specific goals for this session"
+          label="Description / Focus Notes (Optional)"
+          placeholder="e.g., Preparing for Tier-1 Tech behavioral and system design rounds"
           type="text"
           icon={LuFileText}
         />
 
         <AnimatePresence>
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0, marginTop: 0 }}
               animate={{ opacity: 1, height: "auto", marginTop: 8 }}
               exit={{ opacity: 0, height: 0, marginTop: 0 }}
               className="overflow-hidden"
             >
-              <p className="text-red-650 dark:text-red-400 font-medium text-sm bg-red-50 dark:bg-red-950/30 p-3 rounded-xl border border-red-100 dark:border-red-900/50 text-center">
+              <p className="text-sm text-[var(--color-error)] bg-red-50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/30 text-center">
                 {error}
               </p>
             </motion.div>
@@ -139,24 +150,16 @@ const CreateSessionForm = () => {
 
         <button
           type="submit"
-          className="relative overflow-hidden w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold mt-6 py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-80 disabled:cursor-not-allowed group"
+          className="premium-btn mt-4 py-3"
           disabled={isLoading}
         >
-          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shimmer" />
-          
           {isLoading ? (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="flex items-center gap-2 z-10"
-            >
-              <SpinnerLoader /> 
-              <span>Generating AI Questions...</span>
-            </motion.div>
-          ) : (
-            <span className="z-10 flex items-center gap-2">
-              Start Interview Journey
+            <span className="flex items-center gap-2">
+              <SpinnerLoader />
+              Generating Tailored Q&A...
             </span>
+          ) : (
+            "Generate & Start Preparing"
           )}
         </button>
       </form>

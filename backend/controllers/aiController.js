@@ -3,9 +3,95 @@ const Session = require("../models/Session");
 const {
   conceptExplainPrompt,
   questionAnswerPrompt,
-} = require("../../backend/utils/prompts");
+  evaluateAnswerPrompt,
+} = require("../utils/prompts");
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const PRIMARY_MODEL = "openai/gpt-oss-120b";
+const FALLBACK_MODEL = "qwen/qwen3.8-27b";
+
+async function createChatCompletion(options) {
+  try {
+    return await client.chat.completions.create({
+      model: PRIMARY_MODEL,
+      ...options,
+    });
+  } catch (error) {
+    console.warn(`Primary model (${PRIMARY_MODEL}) failed, trying fallback (${FALLBACK_MODEL}):`, error.message);
+    return await client.chat.completions.create({
+      model: FALLBACK_MODEL,
+      ...options,
+    });
+  }
+}
+
+function parseJsonFromLlm(rawText) {
+  if (!rawText) throw new Error("Empty response from AI");
+  
+  const cleaned = rawText
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    const firstBracket = rawText.indexOf('[');
+    const lastBracket = rawText.lastIndexOf(']');
+    const firstBrace = rawText.indexOf('{');
+    const lastBrace = rawText.lastIndexOf('}');
+
+    // Try bracket substring for arrays
+    if (firstBracket !== -1 && lastBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+      try {
+        const sub = rawText.substring(firstBracket, lastBracket + 1);
+        return JSON.parse(sub);
+      } catch (err) {
+        // Fall through to truncation recovery
+      }
+    }
+
+    // Attempt to recover truncated JSON array (cut off at max tokens)
+    if (firstBracket !== -1) {
+      const lastClosedObject = rawText.lastIndexOf('}');
+      if (lastClosedObject > firstBracket) {
+        try {
+          const repaired = rawText.substring(firstBracket, lastClosedObject + 1) + ']';
+          const data = JSON.parse(repaired);
+          if (Array.isArray(data) && data.length > 0) {
+            return data;
+          }
+        } catch (repairErr) {
+          // Fall through
+        }
+      }
+    }
+
+    // Try object substring
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      try {
+        const sub = rawText.substring(firstBrace, lastBrace + 1);
+        return JSON.parse(sub);
+      } catch (err) {
+        // Fall through
+      }
+    }
+
+    // Attempt to repair truncated object by closing open string and brace
+    if (firstBrace !== -1) {
+      try {
+        const candidate = rawText.trim() + '"\n}';
+        return JSON.parse(candidate.substring(firstBrace));
+      } catch (repairErr) {
+        // Fall through
+      }
+    }
+
+    throw e;
+  }
+}
 
 const generateInterviewQuestions = async (req, res) => {
   try {
@@ -14,30 +100,23 @@ const generateInterviewQuestions = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    const count = Math.min(Math.max(parseInt(numberOfQuestions, 10) || 5, 1), 15);
+
     const prompt = questionAnswerPrompt(
       role,
       experience,
       topicsToFocus,
-      numberOfQuestions
+      count
     );
 
-    const response = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "user", content: prompt }
-      ],
+    const response = await createChatCompletion({
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 2048,
+      max_tokens: 4096,
     });
 
     const rawText = response.choices[0].message.content;
-
-    const cleanedText = rawText
-      .replace(/^\s*```json\s*/, "")
-      .replace(/```$/, "")
-      .trim();
-
-    const data = JSON.parse(cleanedText);
+    const data = parseJsonFromLlm(rawText);
 
     res.status(200).json(data);
   } catch (error) {
@@ -56,32 +135,20 @@ const generateConceptExplanation = async (req, res) => {
       return res.status(400).json({ message: "Question is required" });
     }
 
-    const prompt = `Provide the explanation as valid JSON like this:\n\`\`\`json\n{\n  "explanation": "Your answer here"\n}\n\`\`\`\n\nQuestion: ${question}`;
+    const prompt = conceptExplainPrompt(question);
 
-    const response = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "user", content: prompt }
-      ],
+    const response = await createChatCompletion({
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 1024,
+      max_tokens: 4096,
     });
 
     const rawText = response.choices[0].message.content;
-
-    console.log("RAW:", rawText);
-
-    const cleanedText = rawText
-      .replace(/```json\s*/i, "")
-      .replace(/```/g, "")
-      .trim();
-
-
-    const data = JSON.parse(cleanedText);
+    const data = parseJsonFromLlm(rawText);
 
     res.status(200).json(data);
   } catch (error) {
-    console.error(error);
+    console.error("EXPLANATION ERROR:", error);
     res.status(500).json({
       message: "Failed to generate explanation",
       error: error.message,
@@ -119,72 +186,23 @@ Key topics to focus on: ${(session.topicsToFocus || []).join(", ") || "Software 
       `.trim()).join("\n");
     }
 
-    const personaInstruction = persona === "strict" 
-      ? "You are a strict technical interviewer. Your feedback should be direct, challenging, and focus heavily on edge cases."
-      : persona === "friendly"
-      ? "You are a friendly HR recruiter. Your feedback should be encouraging, warm, and focus on communication style."
-      : "You are a balanced professional interviewer. Provide constructive, balanced feedback.";
+    const prompt = evaluateAnswerPrompt({
+      persona,
+      sessionContext,
+      historyContext,
+      question,
+      userAnswer,
+    });
 
-    const prompt = `
-      ${personaInstruction}
-      Evaluate the candidate's response to the interview question below.
-
-      --- INTERVIEW CONTEXT ---
-      ${sessionContext || "General technical interview."}
-
-      --- PAST INTERACTION HISTORY ---
-      ${historyContext || "This is the first question in the interview."}
-
-      --- CURRENT QUESTION ---
-      Question: "${question}"
-
-      --- CANDIDATE'S ANSWER TO EVALUATE ---
-      User's Answer: "${userAnswer}"
-
-      --- CORE OBJECTIVES ---
-      1. **INTELLIGENT EVALUATION**: 
-         - Evaluate the candidate's understanding of the concept. Do NOT search for rigid keyword matches.
-         - Award credit if they understand the concepts and explain it accurately in their own terms (even with informal phrasing or analogies).
-         - Award a score (0 to 10).
-         - CRITICAL RULE: If the answer is blank, extremely short/brief, indicates they do not know the answer (e.g., "I don't know", "no idea", "skip"), or is completely irrelevant, you MUST award a score of EXACTLY 0.
-         - Score confidenceScore between 0 and 100 based on their level of certainty. If they skip or don't know, this MUST be EXACTLY 0.
-         - Generate constructive sentiment analysis, an industry-standard benchmark answer, and bulleted key differences.
-
-      2. **DYNAMIC ADAPTIVE NEXT QUESTION GENERATION**:
-         - Generate a completely dynamic and customized next question (\`nextDynamicQuestion\`) based on the candidate's performance on the current question:
-           - **High Performance (Score >= 7)**: Acknowledge their strong answer in the spoken feedback, and generate a *more advanced*, conceptually deeper, or harder question (e.g., system design considerations, edge cases, advanced features) within the target topics.
-           - **Low Performance (Score <= 4)**: Constructively support them in the spoken feedback, and generate a *simpler / easier / more fundamental* question to test core concepts and help them build confidence.
-           - **Average Performance (Score 5-6)**: Acknowledge their correct baseline knowledge and ask a *medium-difficulty* question on a different aspect of the target topics.
-         - **STRICT CONSTRAINT**: Never repeat questions or ask the same concept twice. Ensure the question remains aligned with the target role and experience.
-
-      Provide your evaluation and the dynamic next question strictly as a valid JSON object matching the following structure exactly (with no markdown wrappers in values, just clean JSON):
-      {
-        "spokenFeedback": "A short, highly natural conversational response (max 2 sentences) responding to the candidate's answer and giving a smooth transition directly into the next question.",
-        "nextDynamicQuestion": "The dynamically generated next question for the candidate, tailored to their performance level based on the rules.",
-        "evaluation": {
-          "score": 8,
-          "confidenceScore": 85,
-          "sentiment": "e.g., 'Assertive and clear', 'Hesitant but conceptually sound'",
-          "industryStandardAnswer": "A detailed example of how a senior professional would answer the current question.",
-          "keyDifferences": ["Difference 1", "Difference 2"]
-        }
-      }
-    `;
-
-    const response = await client.chat.completions.create({
-      model: "openai/gpt-oss-120b",
+    const response = await createChatCompletion({
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 1536,
     });
 
     const rawText = response.choices[0].message.content;
-    const cleanedText = rawText
-      .replace(/```json\s*/i, "")
-      .replace(/```/g, "")
-      .trim();
-
-    const data = JSON.parse(cleanedText);
+    const data = parseJsonFromLlm(rawText);
+    
     res.status(200).json(data);
   } catch (error) {
     console.error("EVALUATION ERROR:", error);

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LuX } from "react-icons/lu";
 
 const Modal = ({ children, isOpen, onClose, title, hideHeader }) => {
   useEffect(() => {
@@ -22,41 +23,30 @@ const Modal = ({ children, isOpen, onClose, title, hideHeader }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/40 dark:bg-black/60"
           onClick={onClose}
         />
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          initial={{ opacity: 0, scale: 0.97, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl premium-shadow border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
+          exit={{ opacity: 0, scale: 0.97, y: 8 }}
+          transition={{ type: "spring", stiffness: 400, damping: 35 }}
+          className="relative w-full max-w-md bg-[var(--color-surface)] rounded-xl shadow-lg border border-[var(--color-border)] overflow-hidden flex flex-col max-h-[90vh]"
         >
           {!hideHeader && (
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-slate-50">{title}</h3>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--color-border)]">
+              <h3 className="text-base font-semibold text-[var(--color-text-primary)]">{title}</h3>
             </div>
           )}
           <button
             type="button"
-            className="absolute top-4 right-4 z-10 w-8 h-8 flex justify-center items-center rounded-full bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-450 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-slate-200 transition-colors"
+            className="absolute top-3 right-3 z-10 w-7 h-7 flex justify-center items-center rounded-md text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text-primary)] transition-colors"
             onClick={onClose}
+            aria-label="Close modal"
           >
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2 2 L14 14 M14 2 L2 14"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
+            <LuX className="w-4 h-4" />
           </button>
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
             {children}
           </div>
         </motion.div>
