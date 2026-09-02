@@ -6,12 +6,7 @@ const connectDB = require("./config/db");
 const authRoute = require("./routes/authRoute");
 const sessionRoute = require("./routes/sessionRoute");
 const questionRoutes = require("./routes/questionRoute");
-const { protect } = require("./middlewares/authMiddleware");
-const {
-  generateInterviewQuestions,
-  generateConceptExplanation,
-  evaluateLiveAnswer,
-} = require("./controllers/aiController");
+const aiRoute = require("./routes/aiRoute");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,10 +29,7 @@ app.use(express.json());
 app.use("/api/auth", authRoute);
 app.use("/api/sessions", sessionRoute);
 app.use("/api/questions", questionRoutes);
-
-app.use("/api/ai/generate-questions", protect, generateInterviewQuestions);
-app.use("/api/ai/generate-explanation", protect, generateConceptExplanation);
-app.use("/api/ai/evaluate-answer", protect, evaluateLiveAnswer);
+app.use("/api/ai", aiRoute);
 
 // Serve uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

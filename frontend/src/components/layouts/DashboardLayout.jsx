@@ -5,11 +5,9 @@ import { UserContext } from "../../context/UserContext";
 const DashboardLayout = ({ children }) => {
   const { user } = useContext(UserContext);
   return (
-    <div className="bg-gray-50 dark:bg-slate-950 min-h-screen text-gray-900 dark:text-slate-100 transition-colors duration-300">
-      <div className="pt-0">
-        <Navbar />
-      </div>
-      {user && <div className="pt-20">{children}</div>}
+    <div className="bg-[var(--color-bg)] min-h-screen text-[var(--color-text-primary)] transition-colors duration-200 math-notebook-pattern">
+      <Navbar />
+      {user && <div className="pt-16">{children}</div>}
     </div>
   );
 };

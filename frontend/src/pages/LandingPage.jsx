@@ -1,20 +1,17 @@
 import React, { useState, useContext, useEffect } from "react";
-import { APP_FEATURES } from "../utils/data";
 import { useNavigate } from "react-router-dom";
-import { 
-  LuSparkles, LuBrain, LuTarget, LuZap, LuSun, LuMoon,
-  LuMail, LuPhone, LuMapPin, LuSend, LuStar, LuMessageSquare, 
-  LuArrowRight, LuCheck, LuTrendingUp, LuCode, 
-  LuGithub, LuLinkedin, LuTwitter, LuYoutube, LuExternalLink,
-  LuMousePointerClick, LuFolder
-} from "react-icons/lu";
+import { LuSparkles, LuBrain, LuTarget, LuZap, LuSun, LuMoon,
+         LuMic, LuVolume2, LuCheck, LuStar, LuArrowRight, LuArrowLeft,
+         LuCode, LuPlay, LuFileText, LuPin, LuTrendingUp, LuChevronDown,
+         LuMousePointerClick, LuFolder, LuAward, LuShieldCheck, LuUsers, LuMessageSquare,
+         LuLayers} from "react-icons/lu";
 import Login from "../pages/Auth/Login";
 import SignUp from "../pages/Auth/SignUp";
 import Modal from "../components/Modal";
 import ProfileInfoCard from "../components/cards/ProfileInfoCard";
 import { UserContext } from "../context/UserContext";
 import { ThemeContext } from "../context/ThemeContext";
-import HERO_IMG from '../assets/hero-image.png'
+import HERO_IMG from '../assets/hero-image.png';
 import { motion, AnimatePresence } from "framer-motion";
 
 const LandingPage = () => {
@@ -25,29 +22,15 @@ const LandingPage = () => {
   const [currentPage, setCurrentPage] = useState("login");
   const [activeFeature, setActiveFeature] = useState(0);
 
-  // 3D Carousel States
+  // Interactive Simulator Tab state
+  const [demoRole, setDemoRole] = useState("Frontend Architect");
+  const [demoRevealed, setDemoRevealed] = useState(false);
+  const [demoNote, setDemoNote] = useState("Remember to mention React Fiber reconciler & double buffering!");
+  const [demoPinned, setDemoPinned] = useState(true);
+  const [isDemoSpeaking, setIsDemoSpeaking] = useState(false);
+
+  // 3D Testimonials Carousel
   const [currentReview, setCurrentReview] = useState(1);
-  const [offset, setOffset] = useState(440);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setOffset(160);
-      } else if (window.innerWidth < 1024) {
-        setOffset(300);
-      } else {
-        setOffset(440);
-      }
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Contact Form State
-  const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error'
 
   const handleCTA = () => {
     if (!user) {
@@ -57,880 +40,895 @@ const LandingPage = () => {
     }
   };
 
-  const featureIcons = [LuBrain, LuTarget, LuZap, LuSparkles, LuBrain];
-
-  // Helper to render half-stars dynamically
-  const renderStars = (rating) => {
-    const fullStars = Math.floor(rating);
-    const hasHalf = rating % 1 !== 0;
-    const emptyStars = 5 - Math.ceil(rating);
-    return (
-      <div className="flex gap-1 mb-4">
-        {[...Array(fullStars)].map((_, i) => (
-          <LuStar key={`full-${i}`} className="w-5 h-5 text-amber-400 fill-amber-400" />
-        ))}
-        {hasHalf && (
-          <div className="relative w-5 h-5">
-            <LuStar className="absolute top-0 left-0 w-5 h-5 text-gray-200 dark:text-slate-800" />
-            <div className="absolute top-0 left-0 w-[50%] h-full overflow-hidden">
-              <LuStar className="w-5 h-5 text-amber-400 fill-amber-400" />
-            </div>
-          </div>
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <LuStar key={`empty-${i}`} className="w-5 h-5 text-gray-200 dark:text-slate-800" />
-        ))}
-      </div>
-    );
+  const playDemoAudio = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      setIsDemoSpeaking(true);
+      utterance.onend = () => setIsDemoSpeaking(false);
+      utterance.onerror = () => setIsDemoSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
-  // Testimonials Cast (Only Male Names & Avatars, Mix of Stars, No Roles/Work)
   const testimonials = [
     {
       id: 1,
       name: "Ashish Yadav",
+      role: "Frontend Engineer @ Razorpay",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Ashish&backgroundColor=b6e3f4",
-      comment: "Prep completely changed my preparation strategy. The real-time AI voice feedback helped me fix my pacing, and the interactive concept maps made answering system design questions intuitive.",
+      comment: "Prep completely changed my preparation strategy. The real-time AI voice feedback helped me fix my pacing, and the interactive concept breakdowns made system design questions click.",
       stars: 5,
     },
     {
       id: 2,
-      name: "Saksham Kaushal",
+      name: "Sksham Kaushal",
+      role: "Full-Stack Developer @ Alphabet Inc.",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Saksham&backgroundColor=c0aede",
       comment: "I was skeptical about AI interviewing, but the accuracy of the feedback blew me away. The 'Understand the Why' feature broke down complex networking topics in seconds. Got my offer!",
-      stars: 4.5,
+      stars: 5,
     },
     {
       id: 3,
       name: "Pratham Mittal",
+      role: "Software Engineer",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Pratham&backgroundColor=d1d4f9",
-      comment: "The customized behavioral question tracks and the ability to pin my notes and personal STAR method stories made learning highly organized. Absolute life-saver for tech loops.",
-      stars: 4,
+      comment: "The customized behavioral question tracks and the ability to pin my notes and personal STAR method stories made learning structured and super low-stress.",
+      stars: 4.5,
     },
     {
       id: 4,
       name: "Shivansh Mehta",
+      role: "Backend Architect",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Shivansh&backgroundColor=ffdfbf",
-      comment: "Highly recommend Prep to anyone preping for senior loops. The mock interview folders allowed me to organize and revisit my weaknesses. Crucial tool for tech interviews.",
+      comment: "Highly recommend Prep to anyone prepping for senior tech loops. The mock interview engine allowed me to practice without stage fright and spot my verbal gaps.",
       stars: 5,
     },
     {
       id: 5,
       name: "Arnav Verma",
+      role: "Platform Engineer",
       avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Arnav&backgroundColor=ffd5dc",
-      comment: "The UI is breathtaking. Creating mock interview collections and adding notes to hard questions made my preparation structured and enjoyable. A masterclass in educational UX.",
-      stars: 4.5,
-    },
-    {
-      id: 6,
-      name: "Tom Cruise",
-      avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Tom&backgroundColor=b6e3f4",
-      comment: "As someone who struggles with anxiety, the interactive simulator built my confidence step-by-step. The AI explanations gave me clear, clean models for technical communication.",
+      comment: "The UI is clean, intuitive and lightning-fast. Creating mock interview collections and inspecting the industry standard answers gave me immense confidence.",
       stars: 5,
-    },
-    {
-      id: 7,
-      name: "Raftaar",
-      avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Raftaar&backgroundColor=c0aede",
-      comment: "This is a masterpiece of prep. The interactive flow-charts, quick concept answers, and high-fidelity folders are exactly what real candidates need to land high-performing jobs.",
-      stars: 4,
-    },
-    {
-      id: 8,
-      name: "Seedhe Maut",
-      avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Maut&backgroundColor=d1d4f9",
-      comment: "A seamless product that simulates core loops and explains complicated architectures with absolute clarity. Made my learning incredibly rapid and structured.",
-      stars: 5,
-    },
-    {
-      id: 9,
-      name: "Mayank Sharma",
-      avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Mayank&backgroundColor=ffdfbf",
-      comment: "Prep's adaptive interview engine feels incredibly close to a real senior engineer round. The dynamic feedback is outstanding and really tests your conceptual depth.",
-      stars: 4.5,
     }
   ];
 
-  // Contact Form Submission Handler
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) return;
-    
-    setIsSubmitting(true);
-    // Simulate API request
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitStatus("success");
-      setFormData({ name: "", email: "", subject: "", message: "" });
-      setTimeout(() => setSubmitStatus(null), 5000);
-    }, 1500);
+  const roleTagsMap = {
+    "Frontend Architect": ["React Fiber", "State Machines", "Web Vitals", "SSR vs CSR", "Micro-frontends"],
+    "Backend Engineer": ["Distributed Systems", "PostgreSQL Indexing", "gRPC", "Redis Caching", "Kafka"],
+    "System Design Lead": ["CAP Theorem", "Sharding", "Rate Limiting", "Consistent Hashing", "Message Queues"],
+    "DevOps / SRE": ["Kubernetes", "CI/CD Pipelines", "Terraform", "Zero-Downtime Deploy", "Observability"]
   };
 
+  const featureTabs = [
+    { id: 0, title: "1. Tailored Questions", icon: LuBrain, desc: "Personalized questions adapted to your target title, years of experience & core tech stack." },
+    { id: 1, title: "2. Deep Concept Explanations", icon: LuCode, desc: "Instant AI breakdowns of tough questions with architecture models and code snippets." },
+    { id: 2, title: "3. Smart Notes & Pinning", icon: LuPin, desc: "Pin critical questions and annotate them with your personal STAR stories & formulas." },
+    { id: 3, title: "4. Live Voice Mock Engine", icon: LuMic, desc: "Realistic conversational AI that listens, asks dynamic follow-ups, and tests under real conditions." },
+    { id: 4, title: "5. Multi-Metric Evaluation", icon: LuTrendingUp, desc: "Granular scoring on technical correctness, speech confidence, and missed edge cases." }
+  ];
+
+  const workflowSteps = [
+    {
+      number: "01",
+      badge: "Step 01",
+      title: "Prepare & Curate",
+      description: "Generate high-impact question banks tailored to your target company level, tech stack, and weak spots.",
+      icon: LuLayers,
+      highlights: ["Smart Topic Mapping", "Custom Seniority Tracks"],
+      gradient: "from-blue-500/10 via-indigo-500/5 to-transparent",
+    },
+    {
+      number: "02",
+      badge: "Step 02",
+      title: "Live Voice Simulation",
+      description: "Join an immersive mock room where the AI listens, handles pauses, and asks dynamic clarifying questions.",
+      icon: LuMic,
+      highlights: ["Real-time Audio Engine", "Dynamic Follow-up Logic"],
+      gradient: "from-indigo-500/10 via-purple-500/5 to-transparent",
+    },
+    {
+      number: "03",
+      badge: "Step 03",
+      title: "Evaluate & Perfect",
+      description: "Review your scores, playback your speech, inspect industry standard answers, and track progress over time.",
+      icon: LuTrendingUp,
+      highlights: ["Multi-Metric Scoring", "Detailed Rubric Breakdown"],
+      gradient: "from-purple-500/10 via-pink-500/5 to-transparent",
+    },
+  ];
+
+  const workflowContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.22,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const workflowCardVariants = {
+    hidden: { opacity: 0, y: 35, scale: 0.97 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 90,
+        damping: 18,
+        mass: 0.8,
+      },
+    },
+  };
   return (
-    <div className="bg-white dark:bg-slate-950 min-h-screen font-sans text-gray-900 dark:text-slate-100 selection:bg-blue-200 dark:selection:bg-blue-800 transition-colors duration-300">
-      
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-900 transition-colors duration-300">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <LuSparkles className="text-white text-lg" />
-            </div>
-            <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50">Prep</span>
+    <div className="bg-[var(--color-bg)] min-h-screen text-[var(--color-text-primary)] transition-colors duration-200 overflow-x-hidden math-notebook-pattern">
+
+      {/* ─── Header ─── */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[var(--color-surface)]/90 backdrop-blur-md border-b border-[var(--color-border)] transition-colors duration-200">
+        <div className="container mx-auto px-6 h-full flex items-center justify-between max-w-7xl">
+          <div className="flex items-center gap-3">
+            <img
+              src="/Proview-Symbol.png"
+              alt="Prep"
+              className="w-8 h-8 object-contain rounded-lg border border-[var(--color-border)] shadow-xs"
+            />
+            <span className="text-lg font-bold tracking-tight text-[var(--color-text-primary)]">
+              Prep
+            </span>
           </div>
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
+            <button 
+              onClick={() => document.getElementById("simulator-section")?.scrollIntoView({ behavior: "smooth" })}
+              className="hover:text-[var(--color-accent)] transition-colors"
+            >
+              Interactive Simulator
+            </button>
+            <button 
+              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+              className="hover:text-[var(--color-accent)] transition-colors"
+            >
+              How It Works
+            </button>
+            <button 
+              onClick={() => document.getElementById("testimonials-section")?.scrollIntoView({ behavior: "smooth" })}
+              className="hover:text-[var(--color-accent)] transition-colors"
+            >
+              Success Stories
+            </button>
+          </nav>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
-              className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all text-gray-600 dark:text-slate-300"
+              className="w-9 h-9 rounded-lg border border-[var(--color-border)] flex items-center justify-center hover:bg-[var(--color-bg)] transition-colors text-[var(--color-text-secondary)]"
               title="Toggle Theme"
+              aria-label="Toggle theme"
             >
               {theme === "dark" ? (
-                <LuSun className="text-lg text-amber-400" />
+                <LuSun className="text-base text-amber-400" />
               ) : (
-                <LuMoon className="text-lg text-slate-700" />
+                <LuMoon className="text-base text-slate-700" />
               )}
             </button>
 
             {user ? (
               <ProfileInfoCard />
             ) : (
-              <button
-                className="bg-gray-900 dark:bg-slate-50 text-white dark:text-slate-950 hover:bg-gray-800 dark:hover:bg-slate-200 transition-colors px-6 py-2.5 rounded-full font-medium text-sm"
-                onClick={() => setOpenAuthModel(true)}
-              >
-                Sign In
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="hidden sm:inline-flex px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg)] transition-colors"
+                  onClick={() => {
+                    setCurrentPage("login");
+                    setOpenAuthModel(true);
+                  }}
+                >
+                  Log In
+                </button>
+                <button
+                  className="px-4 py-1.5 rounded-lg bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] transition-all shadow-sm active:scale-95"
+                  onClick={() => {
+                    setCurrentPage("signup");
+                    setOpenAuthModel(true);
+                  }}
+                >
+                  Get Started
+                </button>
+              </div>
             )}
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] opacity-30 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 dark:from-blue-600/30 dark:to-purple-600/30 blur-[100px] rounded-full" />
-        </div>
+      {/* ─── Hero Section: Clean & Slick ─── */}
+      <section className="relative pt-28 pb-20 lg:pt-36 lg:pb-28 overflow-hidden">
+        {/* Soft Ambient Background Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-gradient-to-r from-indigo-500/15 via-purple-500/10 to-blue-500/15 blur-[130px] rounded-full pointer-events-none" />
 
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-8">
+        <div className="container mx-auto px-6 max-w-7xl relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-14">
+            
+            {/* Left Hero Content */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="w-full lg:w-1/2 space-y-8 text-center lg:text-left"
+              transition={{ duration: 0.6 }}
+              className="w-full lg:w-1/2 space-y-6 text-center lg:text-left"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 text-sm font-semibold mb-2">
-                <LuSparkles className="text-blue-500" />
-                <span>Next-Gen Interview Prep</span>
+              
+              {/* Slick Pill Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/20 text-[var(--color-accent)] text-xs font-semibold">
+
+                <span>Beta</span>
               </div>
               
-              <h1 className="text-5xl lg:text-7.5xl font-bold leading-[1.1] tracking-tight text-gray-900 dark:text-slate-50">
-                Master your next interview with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">AI precision.</span>
+              {/* Main Headline */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.12] tracking-tight text-[var(--color-text-primary)]">
+                Master your next interview with{" "}
+                <span className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
+                  AI precision.
+                </span>
               </h1>
               
-              <p className="text-lg lg:text-xl text-gray-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Experience real-time voice interviews, get deeply personalized feedback, and track your progress. Prep turns anxiety into confidence.
+              {/* Subtitle */}
+              <p className="text-base lg:text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Experience real-time voice interviews, get deeply personalized feedback on speech confidence and technical depth, and master senior engineering loops without the anxiety.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3.5 justify-center lg:justify-start pt-2">
                 <button
                   onClick={handleCTA}
-                  className="bg-blue-600 text-white px-8 py-4 rounded-xl font-medium text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                  className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white px-7 py-3.5 rounded-xl font-medium text-base transition-all shadow-md shadow-indigo-500/20 active:scale-[0.98] flex items-center justify-center gap-2 group"
                 >
                   Start Practicing Free
+                  <LuArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </button>
                 <button 
-                  onClick={() => document.getElementById("showcase-section")?.scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-800 px-8 py-4 rounded-xl font-medium text-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all active:scale-[0.98]"
+                  onClick={() => document.getElementById("simulator-section")?.scrollIntoView({ behavior: 'smooth' })}
+                  className="bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] px-6 py-3.5 rounded-xl font-medium text-base hover:bg-[var(--color-bg)] hover:border-[var(--color-accent)]/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-xs"
                 >
-                  View Features
+                  <LuPlay className="w-4 h-4 text-[var(--color-accent)]" />
+                  Try Live Simulator
                 </button>
+              </div>
+
+            </motion.div>
+
+            {/* Right Hero Visual with Slick Floating Badges */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="w-full lg:w-1/2 flex justify-center relative"
+            >
+              <div className="relative w-full max-w-xl">
+                
+                {/* Visual Frame */}
+                <div className="relative z-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+                  <img 
+                    src={HERO_IMG} 
+                    alt="Prep Dashboard Preview" 
+                    className="w-full h-auto object-cover opacity-95 hover:opacity-100 transition-opacity"
+                  />
+                </div>
+
+                {/* Floating Badge 1: Voice Active */}
+                <motion.div 
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                  className="absolute -top-4 -left-4 z-20 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 shadow-lg flex items-center gap-3 backdrop-blur-md"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                    <LuMic className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-[var(--color-text-primary)]">Live Speech Recognition</div>
+                    <div className="text-[10px] text-emerald-500 font-medium">● 99.4% Accuracy Active</div>
+                  </div>
+                </motion.div>
+
+                {/* Floating Badge 2: Evaluation Score */}
+                <motion.div 
+                  animate={{ y: [0, 6, 0] }}
+                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute -bottom-4 -right-4 z-20 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 shadow-lg flex items-center gap-3 backdrop-blur-md"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[var(--color-accent-subtle)] text-[var(--color-accent)] flex items-center justify-center font-bold text-sm">
+                    9.6
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-[var(--color-text-primary)]">System Design Score</div>
+                    <div className="text-[10px] text-[var(--color-text-muted)]">Passed with Distinction</div>
+                  </div>
+                </motion.div>
+
               </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="w-full lg:w-1/2 flex justify-center"
-            >
-              <div className="relative w-full max-w-2xl">
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/10 dark:to-purple-900/10 rounded-2xl transform rotate-2 scale-105 opacity-50"></div>
-                <img 
-                  src={HERO_IMG} 
-                  alt="Dashboard Preview" 
-                  className="relative z-10 w-full rounded-2xl premium-shadow border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900"
-                />
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* NEW Interactive Sticky Scroll Showcase Section */}
-      <section id="showcase-section" className="py-24 bg-slate-50 dark:bg-slate-900/30 relative overflow-visible transition-colors duration-300">
-        <div className="absolute top-1/2 -right-64 w-[800px] h-[800px] bg-blue-50 dark:bg-blue-950/10 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
-        <div className="absolute bottom-0 -left-64 w-[600px] h-[600px] bg-purple-50 dark:bg-purple-950/10 rounded-full blur-[100px] opacity-60 pointer-events-none"></div>
-
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 text-sm font-semibold mb-4">
-              <LuSparkles />
-              <span>Interactive Showcase</span>
+      {/* ─── Interactive Sticky Simulator Section (User Favorite) ─── */}
+      <section id="simulator-section" className="py-24 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 relative transition-colors duration-200">
+        <div className="container mx-auto px-6 max-w-7xl">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/20 text-[var(--color-accent)] text-xs font-semibold mb-3">
+              <LuMousePointerClick className="text-sm" />
+              <span>Interactive Feature Playground</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 dark:text-slate-50 mb-6">
-              Everything you need to succeed
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-[var(--color-text-primary)] mb-3">
+              Try Prep features right here
             </h2>
-            <p className="text-xl text-gray-600 dark:text-slate-400">
-              Powerful tools designed to simulate real-world conditions and dramatically improve your performance. Scroll down to see them in action.
+            <p className="text-base text-[var(--color-text-secondary)]">
+              Click through the tabs below to explore how Prep personalizes questions, reveals deep AI insights, and evaluates your voice answers.
             </p>
           </div>
 
-          {/* Features Column Showcase */}
-          <div className="relative flex flex-col lg:flex-row gap-16 items-start max-w-6xl mx-auto">
-            {/* Sticky Visualizer Column (Left) - Desktop only */}
-            <div className="hidden lg:block lg:w-1/2 sticky top-[calc(50vh-240px)] h-[480px]">
-              <div className="w-full h-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-2xl p-6 overflow-hidden">
-                {/* Simulator Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800/80 mb-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Selector Tabs (5 cols) */}
+            <div className="lg:col-span-5 space-y-3">
+              {featureTabs.map((tab) => {
+                const IconComponent = tab.icon;
+                const isSelected = activeFeature === tab.id;
+                return (
+                  <div
+                    key={tab.id}
+                    onClick={() => setActiveFeature(tab.id)}
+                    className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer text-left ${
+                      isSelected
+                        ? "bg-[var(--color-surface)] border-[var(--color-accent)] shadow-md translate-x-1"
+                        : "bg-[var(--color-surface)]/60 border-[var(--color-border)] hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-surface)]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        isSelected 
+                          ? "bg-[var(--color-accent)] text-white" 
+                          : "bg-[var(--color-bg)] text-[var(--color-text-secondary)]"
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className={`text-sm font-semibold mb-1 ${
+                          isSelected ? "text-[var(--color-accent)]" : "text-[var(--color-text-primary)]"
+                        }`}>
+                          {tab.title}
+                        </h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                          {tab.desc}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="px-4 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider">
-                    Prep SIMULATOR V1.0
-                  </div>
-                </div>
+                );
+              })}
+            </div>
 
-                {/* Dynamic Visualization Screens */}
-                <div className="relative h-[340px] w-full flex items-center justify-center">
+            {/* Right Interactive Screen (7 cols) */}
+            <div className="lg:col-span-7 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-xl p-6 min-h-[460px] flex flex-col justify-between">
+              
+              {/* Simulator Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)] mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <div className="w-3 h-3 rounded-full bg-amber-400" />
+                  <div className="w-3 h-3 rounded-full bg-green-400" />
+                </div>
+                <div className="px-3 py-1 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-[10px] font-semibold text-[var(--color-text-muted)] tracking-wider uppercase">
+                  Prep Interactive Simulator
+                </div>
+              </div>
+
+              {/* Dynamic Content Views */}
+              <div className="flex-1 flex flex-col justify-center">
                 <AnimatePresence mode="wait">
-                  {/* FEATURE 0: Tailored Just For You */}
+                  
+                  {/* TAB 0: Tailored Setup */}
                   {activeFeature === 0 && (
                     <motion.div
-                      key="feat0"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.4 }}
-                      className="w-full h-full flex flex-col justify-center items-center relative"
+                      key="tab0"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="space-y-5"
                     >
-                      <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-gray-200 dark:border-slate-800 w-full max-w-sm shadow-md space-y-4">
-                        <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-900 pb-3">
-                          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600">
-                            <LuBrain className="text-xl animate-pulse" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-semibold text-gray-400">Target Role</div>
-                            <div className="text-sm font-bold text-gray-800 dark:text-slate-100">Senior Frontend Architect</div>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          {["React Fiber", "Next.js", "System Design", "Web Performance", "State Management", "Docker"].map((tag, idx) => (
-                            <motion.span
-                              key={tag}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.1 }}
-                              className="px-3 py-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-full border border-blue-100 dark:border-blue-900/50"
+                      <div>
+                        <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block mb-2">
+                          Select Role to Generate Custom Track:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.keys(roleTagsMap).map((r) => (
+                            <button
+                              key={r}
+                              onClick={() => setDemoRole(r)}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                                demoRole === r
+                                  ? "bg-[var(--color-accent)] text-white border-transparent shadow-sm"
+                                  : "bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]/30"
+                              }`}
                             >
-                              {tag}
-                            </motion.span>
+                              {r}
+                            </button>
                           ))}
                         </div>
                       </div>
 
-                      {/* Floating Decorative Tech Elements */}
-                      <div className="absolute -top-4 -left-4 w-12 h-12 bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/20 rounded-xl flex items-center justify-center text-purple-500 animate-float text-lg font-bold">JS</div>
-                      <div className="absolute -bottom-2 right-4 w-14 h-14 bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-500 animate-float-delayed text-lg font-bold">TS</div>
+                      <div className="bg-[var(--color-bg)] p-4 rounded-xl border border-[var(--color-border)] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[var(--color-accent)]">Generated Core Topics</span>
+                          <span className="text-[10px] text-[var(--color-text-muted)]">3 Yrs Experience Target</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {roleTagsMap[demoRole].map((tag) => (
+                            <span key={tag} className="text-xs font-medium px-2.5 py-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-[var(--color-text-secondary)]">
+                              ✓ {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-[var(--color-text-muted)] italic">
+                        Tip: In the actual app, you can enter any custom role title, duration (5-15 min) and persona style.
+                      </p>
                     </motion.div>
                   )}
 
-                  {/* FEATURE 1: Learn at Your Own Pace */}
+                  {/* TAB 1: Concept Explainer */}
                   {activeFeature === 1 && (
                     <motion.div
-                      key="feat1"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.4 }}
-                      className="w-full h-full flex flex-col justify-center items-center"
+                      key="tab1"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="space-y-4"
                     >
-                      <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-gray-200 dark:border-slate-800 w-full max-w-sm shadow-md space-y-4">
-                        <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400">PRACTICE SET #4</div>
-                        <div className="text-sm font-semibold text-gray-800 dark:text-slate-100">
-                          "Explain OAuth 2.0 Authorization Code Flow."
-                        </div>
-                        <div className="relative">
-                          <button className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-semibold shadow-md flex items-center justify-center gap-1">
-                            <LuMousePointerClick className="text-sm" />
-                            Reveal AI Explainer
-                          </button>
-                        </div>
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          transition={{ delay: 0.5, duration: 0.4 }}
-                          className="overflow-hidden bg-slate-900 text-slate-300 p-3 rounded-lg text-[10px] font-mono border border-slate-800 space-y-1"
-                        >
-                          <div className="text-amber-400">// Step 1: Request auth code</div>
-                          <div>window.location.href = authUrl;</div>
-                          <div className="text-green-400">// Step 2: Exchange code for Access Token</div>
-                        </motion.div>
+                      <div className="bg-[var(--color-bg)] p-4 rounded-xl border border-[var(--color-border)]">
+                        <div className="text-[11px] font-bold text-[var(--color-accent)] mb-1">INTERVIEW QUESTION</div>
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                          "How does Node.js handle asynchronous I/O with libuv's Event Loop?"
+                        </p>
                       </div>
+
+                      <button
+                        onClick={() => setDemoRevealed(!demoRevealed)}
+                        className="w-full py-2.5 px-4 rounded-lg bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent)]/30 text-xs font-semibold hover:bg-[var(--color-accent)] hover:text-white transition-colors flex items-center justify-center gap-2"
+                      >
+                        <LuSparkles />
+                        {demoRevealed ? "Hide AI Breakdown" : "Click to Reveal AI Explainer"}
+                      </button>
+
+                      {demoRevealed && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="bg-[var(--color-bg)] p-4 rounded-xl border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] space-y-2 overflow-hidden"
+                        >
+                          <div className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">// 1. Non-blocking System Calls</div>
+                          <p>Node delegates I/O tasks to libuv worker threads or OS kernel epoll/kqueue.</p>
+                          <div className="font-mono text-amber-600 dark:text-amber-400 font-semibold">// 2. Phases of Execution</div>
+                          <p>Timers → Pending Callbacks → Poll → Check (setImmediate) → Close Callbacks.</p>
+                        </motion.div>
+                      )}
                     </motion.div>
                   )}
 
-                  {/* FEATURE 2: Capture Your Insights */}
+                  {/* TAB 2: Notes & Pinning */}
                   {activeFeature === 2 && (
                     <motion.div
-                      key="feat2"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.4 }}
-                      className="w-full h-full flex flex-col justify-center items-center relative"
+                      key="tab2"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="space-y-4"
                     >
-                      <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-gray-200 dark:border-slate-800 w-full max-w-sm shadow-md space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-900">
-                          <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                            <span>📓</span> Personal Notes
-                          </div>
-                          <span className="text-[10px] text-gray-400">Pinned</span>
+                      <div className="flex items-center justify-between bg-[var(--color-bg)] p-3 rounded-xl border border-[var(--color-border)]">
+                        <div className="text-xs font-medium text-[var(--color-text-primary)]">
+                          "Explain React Concurrent Mode"
                         </div>
-                        
-                        <div className="space-y-3">
-                          <motion.div
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="p-3 bg-amber-50 dark:bg-amber-950/20 border-l-4 border-amber-500 rounded text-xs text-gray-700 dark:text-slate-300"
-                          >
-                            💡 <strong>STAR Method:</strong> For behavioral questions, explain the specific metric boosted (e.g. 24% load time reduction).
-                          </motion.div>
+                        <button
+                          onClick={() => setDemoPinned(!demoPinned)}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-md border flex items-center gap-1 transition-colors ${
+                            demoPinned
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                              : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]"
+                          }`}
+                        >
+                          <LuPin className="w-3 h-3" />
+                          {demoPinned ? "Pinned to Top" : "Pin Question"}
+                        </button>
+                      </div>
 
-                          <motion.div
-                            initial={{ x: 20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.5 }}
-                            className="p-3 bg-purple-50 dark:bg-purple-950/20 border-l-4 border-purple-500 rounded text-xs text-gray-700 dark:text-slate-300"
-                          >
-                            🔥 <strong>Edge Case:</strong> JWT tokens must be saved in HttpOnly cookie to shield from XSS exploits.
-                          </motion.div>
-                        </div>
+                      <div>
+                        <label className="text-xs font-semibold text-[var(--color-text-muted)] block mb-1.5">
+                          Personal STAR Story & Insights:
+                        </label>
+                        <textarea
+                          value={demoNote}
+                          onChange={(e) => setDemoNote(e.target.value)}
+                          className="premium-input text-xs h-24 resize-none"
+                          placeholder="Type your notes..."
+                        />
+                      </div>
+                      <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        ✓ Autosaved to your private preparation workspace.
                       </div>
                     </motion.div>
                   )}
 
-                  {/* FEATURE 3: Understand the 'Why' */}
+                  {/* TAB 3: Voice Mock Simulation */}
                   {activeFeature === 3 && (
                     <motion.div
-                      key="feat3"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.4 }}
-                      className="w-full h-full flex flex-col justify-center items-center"
+                      key="tab3"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="text-center space-y-5"
                     >
-                      {/* Concept Mind Map SVG */}
-                      <div className="relative w-64 h-64 bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-full shadow-inner flex items-center justify-center">
-                        <svg className="absolute inset-0 w-full h-full">
-                          {/* Laser Pulse Paths */}
-                          <line x1="128" y1="128" x2="40" y2="60" className="stroke-blue-500/40 dark:stroke-blue-400/40 stroke-2" />
-                          <line x1="128" y1="128" x2="216" y2="60" className="stroke-purple-500/40 dark:stroke-purple-400/40 stroke-2" />
-                          <line x1="128" y1="128" x2="40" y2="196" className="stroke-indigo-500/40 dark:stroke-indigo-400/40 stroke-2" />
-                          <line x1="128" y1="128" x2="216" y2="196" className="stroke-emerald-500/40 dark:stroke-emerald-400/40 stroke-2" />
-                          
-                          {/* Animated flow line dashes */}
-                          <line x1="128" y1="128" x2="40" y2="60" className="stroke-blue-500 dark:stroke-blue-400 stroke-2 animate-flow-line" />
-                          <line x1="128" y1="128" x2="216" y2="60" className="stroke-purple-500 dark:stroke-purple-400 stroke-2 animate-flow-line" />
-                        </svg>
-
-                        {/* Center Concept Node */}
-                        <div className="relative z-10 w-20 h-20 bg-blue-600 text-white rounded-full flex flex-col items-center justify-center font-bold text-[10px] shadow-lg animate-pulse-glow">
-                          <span>JWT Auth</span>
-                          <span className="text-[7px] font-normal opacity-85">Concept</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-full border-2 border-[var(--color-accent)] flex items-center justify-center animate-pulse">
+                          <LuMic className="w-6 h-6 text-[var(--color-accent)]" />
                         </div>
-
-                        {/* Connected Subnodes */}
-                        <div className="absolute top-8 left-4 px-2.5 py-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-[9px] font-semibold">CSRF/XSS</div>
-                        <div className="absolute top-8 right-4 px-2.5 py-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-[9px] font-semibold">Stateless</div>
-                        <div className="absolute bottom-8 left-4 px-2.5 py-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-[9px] font-semibold">Payload</div>
-                        <div className="absolute bottom-8 right-4 px-2.5 py-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-[9px] font-semibold">Signature</div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent)]">
+                          AI Interviewer Voice Active
+                        </span>
                       </div>
+
+                      <div className="bg-[var(--color-bg)] p-4 rounded-xl border border-[var(--color-border)]">
+                        <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                          "Tell me about a time you resolved a major production bottleneck under strict SLA limits."
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => playDemoAudio("Tell me about a time you resolved a major production bottleneck under strict SLA limits.")}
+                        disabled={isDemoSpeaking}
+                        className="premium-btn max-w-xs mx-auto py-2.5 text-xs"
+                      >
+                        <LuVolume2 className="w-4 h-4" />
+                        {isDemoSpeaking ? "Playing AI Speech..." : "Hear AI Interviewer Voice"}
+                      </button>
                     </motion.div>
                   )}
 
-                  {/* FEATURE 4: Save & Organize */}
+                  {/* TAB 4: Multi-Metric Evaluation */}
                   {activeFeature === 4 && (
                     <motion.div
-                      key="feat4"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.4 }}
-                      className="w-full h-full flex flex-col justify-center items-center"
+                      key="tab4"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="space-y-4"
                     >
-                      <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-gray-200 dark:border-slate-800 w-full max-w-sm shadow-md space-y-4">
-                        <div className="text-xs font-bold text-blue-600 dark:text-blue-400">📂 Collections Storage</div>
-                        
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-xl text-center space-y-1">
-                            <span className="text-2xl">📂</span>
-                            <div className="text-[11px] font-bold text-gray-800 dark:text-slate-100">System Design</div>
-                            <div className="text-[9px] text-gray-400">8 Practice Sets</div>
-                          </div>
-                          
-                          <div className="p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/30 rounded-xl text-center space-y-1">
-                            <span className="text-2xl">📂</span>
-                            <div className="text-[11px] font-bold text-gray-800 dark:text-slate-100">FAANG Mock</div>
-                            <div className="text-[9px] text-gray-400">12 Practice Sets</div>
-                          </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-[var(--color-bg)] p-4 rounded-xl border border-[var(--color-border)] text-center">
+                          <div className="text-2xl font-black text-emerald-500">9.2 / 10</div>
+                          <div className="text-xs font-semibold text-[var(--color-text-muted)] mt-1">Accuracy Score</div>
                         </div>
+                        <div className="bg-[var(--color-bg)] p-4 rounded-xl border border-[var(--color-border)] text-center">
+                          <div className="text-2xl font-black text-indigo-500">88%</div>
+                          <div className="text-xs font-semibold text-[var(--color-text-muted)] mt-1">Speech Confidence</div>
+                        </div>
+                      </div>
 
-                        {/* Card glides into Folder illustration */}
-                        <motion.div
-                          animate={{ y: [0, -10, 0], scale: [1, 0.95, 1] }}
-                          transition={{ repeat: Infinity, duration: 2.5 }}
-                          className="mx-auto max-w-[200px] bg-white dark:bg-slate-900 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-800 flex items-center justify-between text-[10px] font-semibold"
-                        >
-                          <span>📚 Cache Architecture Prep</span>
-                          <span className="text-blue-500">→</span>
-                        </motion.div>
+                      <div className="bg-[var(--color-bg)] p-3.5 rounded-xl border border-[var(--color-border)] text-xs space-y-2">
+                        <div className="font-semibold text-[var(--color-text-primary)] flex items-center gap-1.5">
+                          <LuCheck className="text-emerald-500" /> Key Strengths Identified:
+                        </div>
+                        <p className="text-[var(--color-text-secondary)]">Clear separation of concerns, mentioned circuit breakers & distributed tracing.</p>
+                        <div className="font-semibold text-amber-500 flex items-center gap-1.5 pt-1">
+                          <LuZap className="text-amber-500" /> Recommended Additions:
+                        </div>
+                        <p className="text-[var(--color-text-secondary)]">Quantify database load reduction percentage in the result stage.</p>
                       </div>
                     </motion.div>
                   )}
+
                 </AnimatePresence>
               </div>
+
+              {/* Bottom Interactive Progress indicator */}
+              <div className="pt-4 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                <span>Interactive feature {activeFeature + 1} of 5</span>
+                <div className="flex gap-1.5">
+                  {featureTabs.map((tab) => (
+                    <div 
+                      key={tab.id}
+                      onClick={() => setActiveFeature(tab.id)}
+                      className={`h-1.5 rounded-full cursor-pointer transition-all ${
+                        activeFeature === tab.id 
+                          ? "w-6 bg-[var(--color-accent)]" 
+                          : "w-2 bg-[var(--color-border)]"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
             </div>
+
           </div>
 
-          {/* Scrolling Content (Right Column) */}
-            <div className="w-full lg:w-1/2 space-y-12">
-              {APP_FEATURES.map((feature, index) => {
-                const Icon = featureIcons[index % featureIcons.length];
-                const isActive = activeFeature === index;
-
-                return (
-                  <motion.div
-                    key={feature.id}
-                    onViewportEnter={() => setActiveFeature(index)}
-                    initial={{ opacity: 0.3, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px", amount: 0.6 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className={`p-8 rounded-2xl border transition-all duration-500 ${
-                      isActive 
-                        ? "bg-white dark:bg-slate-900 border-blue-500/25 shadow-xl shadow-blue-500/5 ring-1 ring-blue-500/5" 
-                        : "border-gray-100 dark:border-slate-900/50 bg-white/50 dark:bg-slate-900/10 opacity-70"
-                    }`}
-                  >
-                    {/* Feature Card Header */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${
-                        isActive 
-                          ? "bg-blue-600 text-white" 
-                          : "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-                      }`}>
-                        <Icon className="text-xl" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase">
-                          Feature 0{index + 1}
-                        </span>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-slate-50">
-                          {feature.title}
-                        </h3>
-                      </div>
-                    </div>
-
-                    <p className="text-gray-600 dark:text-slate-400 text-sm leading-relaxed mb-6">
-                      {feature.description}
-                    </p>
-
-                    {/* Inline mobile visualizer - shown only on mobile */}
-                    <div className="block lg:hidden w-full bg-slate-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800 p-4 mb-6 overflow-hidden">
-                      {index === 0 && (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="text-xs font-bold text-gray-500">Role Profile Tagging</div>
-                          <div className="flex flex-wrap justify-center gap-1.5">
-                            {["React Fiber", "Next.js", "System Design", "Web Performance"].map(tag => (
-                              <span key={tag} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-medium">{tag}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {index === 1 && (
-                        <div className="text-xs font-mono bg-slate-900 text-slate-300 p-3 rounded-lg border border-slate-800">
-                          <span className="text-amber-400">// Concept explanation code snippet</span>
-                          <div className="text-blue-400 mt-1">const debounce = (fn, d) =&gt; ...</div>
-                        </div>
-                      )}
-                      {index === 2 && (
-                        <div className="p-3 bg-amber-50 dark:bg-amber-950/10 border-l-4 border-amber-500 rounded text-xs text-gray-700 dark:text-slate-300">
-                          💡 <strong>STAR Method Story:</strong> Detail the action and impact metrics clearly!
-                        </div>
-                      )}
-                      {index === 3 && (
-                        <div className="text-center text-xs font-bold text-blue-600">
-                          🌐 JWT Auth ➔ CSRF/XSS ➔ Stateless
-                        </div>
-                      )}
-                      {index === 4 && (
-                        <div className="flex justify-around text-xs font-bold">
-                          <span>📂 System Design</span>
-                          <span>📂 FAANG Mock</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button 
-                      onClick={handleCTA}
-                      className="text-blue-600 dark:text-blue-400 text-sm font-semibold hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 transition-colors group"
-                    >
-                      Get Started with {feature.title.split(" ")[0]}
-                      <LuArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* NEW Testimonials & Reviews Section - 3D Cylindrical Carousel */}
-      <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-purple-50 dark:bg-purple-950/10 rounded-full blur-[120px] opacity-40 pointer-events-none"></div>
+        {/* ─── How It Works: 3 Step Workflow Pipeline ─── */}
+        <section id="how-it-works" className="relative py-28 overflow-hidden border-t border-[var(--color-border)]">
+          {/* Ambient background glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[350px] bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
 
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 text-sm font-semibold mb-4">
-              <LuStar className="text-purple-500 fill-purple-500" />
-              <span>User Success Stories</span>
+          <div className="container mx-auto px-6 max-w-6xl relative z-10">
+            
+            {/* Section Header */}
+            <div className="text-center max-w-2xl mx-auto mb-20">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/20 text-[var(--color-accent)] text-xs font-semibold tracking-wide uppercase mb-4"
+              >
+                <LuSparkles className="text-sm animate-pulse" />
+                <span>Structured Progression</span>
+              </motion.div>
+
+              <motion.h2
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[var(--color-text-primary)] mb-4"
+              >
+                Three steps to{" "}
+                <span className="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
+                  interview mastery
+                </span>
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-base text-[var(--color-text-secondary)] leading-relaxed"
+              >
+                A high-fidelity preparation pipeline engineered around the rigorous hiring loops of premier tech teams.
+              </motion.p>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 dark:text-slate-50 mb-6">
-              Loved by ambitious professionals
+
+            {/* Workflow Cards Grid / Pipeline */}
+            <div className="relative">
+              
+              {/* Animated Connecting Pipeline SVG (Desktop) */}
+              <div className="hidden md:block absolute top-1/2 left-0 right-0 -translate-y-1/2 pointer-events-none z-0 px-12">
+                <svg
+                  className="w-full h-24 overflow-visible"
+                  viewBox="0 0 900 100"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <linearGradient id="pipeline-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.1" />
+                      <stop offset="50%" stopColor="var(--color-accent)" stopOpacity="0.7" />
+                      <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.1" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Base Subtle Track */}
+                  <path
+                    d="M 50 50 C 250 15, 350 85, 500 50 C 650 15, 750 85, 850 50"
+                    stroke="var(--color-border)"
+                    strokeWidth="2"
+                    strokeDasharray="6 6"
+                    strokeOpacity="0.8"
+                  />
+
+                  {/* Glowing Animated Dash Pipeline */}
+                  <path
+                    d="M 50 50 C 250 15, 350 85, 500 50 C 650 15, 750 85, 850 50"
+                    stroke="url(#pipeline-gradient)"
+                    strokeWidth="2"
+                    strokeDasharray="8 8"
+                    className="animate-dash"
+                  />
+                </svg>
+              </div>
+
+              {/* Cards List */}
+              <motion.div
+                variants={workflowContainerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-80px" }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10"
+              >
+                {workflowSteps.map((step, idx) => {
+                  const Icon = step.icon;
+                  
+                  const staggerOffsetClass =
+                    idx === 0
+                      ? "md:translate-y-0"
+                      : idx === 1
+                      ? "md:translate-y-4"
+                      : "md:translate-y-8";
+
+                  return (
+                    <motion.div
+                      key={step.number}
+                      variants={workflowCardVariants}
+                      className={`group relative rounded-2xl transition-all duration-300 hover:-translate-y-1.5 ${staggerOffsetClass}`}
+                    >
+                      {/* Outer Glow Halo on Hover */}
+                      <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-b from-[var(--color-accent)] to-transparent opacity-0 group-hover:opacity-40 blur-md transition-opacity duration-500 pointer-events-none" />
+
+                      {/* Glassmorphic Card Surface */}
+                      <div className="relative h-full flex flex-col justify-between overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/75 backdrop-blur-xl p-7 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300 group-hover:border-[var(--color-accent)]/50 group-hover:shadow-[0_12px_30px_-10px_rgba(79,70,229,0.18)] dark:group-hover:shadow-[0_12px_30px_-10px_rgba(129,140,248,0.22)]">
+                        
+                        {/* Subtle Inner Highlight Border (Top Edge Sheen) */}
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent pointer-events-none" />
+                        
+                        {/* Faint Gradient Underlay */}
+                        <div className={`absolute inset-0 bg-gradient-to-b ${step.gradient} opacity-50 pointer-events-none transition-opacity duration-300 group-hover:opacity-100`} />
+
+                        {/* Oversized Watermark Step Number */}
+                        <span 
+                          aria-hidden="true" 
+                          className="absolute -top-3 right-3 text-7xl lg:text-8xl font-black tracking-tighter text-[var(--color-text-primary)] opacity-[0.04] dark:opacity-[0.06] select-none pointer-events-none transition-all duration-300 group-hover:scale-105 group-hover:opacity-[0.08] dark:group-hover:opacity-[0.1]"
+                        >
+                          {step.number}
+                        </span>
+
+                        {/* Top Row: Mini Icon Badge & Step Label */}
+                        <div className="relative z-10 mb-6">
+                          <div className="flex items-center justify-between mb-5">
+                            <div className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm flex items-center justify-center text-[var(--color-accent)] group-hover:bg-[var(--color-accent)] group-hover:text-white group-hover:border-transparent transition-all duration-300">
+                              <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                            </div>
+                            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] group-hover:border-[var(--color-accent)]/30 transition-colors">
+                              {step.badge}
+                            </span>
+                          </div>
+
+                          <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2.5 tracking-tight flex items-center gap-1.5">
+                            {step.title}
+                          </h3>
+
+                          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                            {step.description}
+                          </p>
+                        </div>
+
+                        {/* Feature Highlights Pills */}
+                        <div className="relative z-10 pt-5 border-t border-[var(--color-border)]/60 space-y-2">
+                          {step.highlights.map((item, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-secondary)]">
+                              <LuCheck className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0" />
+                              <span>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Subtle Bottom Accent Strip on Hover */}
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </div>
+
+          </div>
+        </section>
+
+      {/* ─── 3D Testimonials / Candidate Reviews ─── */}
+      <section id="testimonials-section" className="py-20 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/20 text-[var(--color-accent)] text-xs font-semibold mb-3">
+              <LuAward className="text-sm" />
+              <span>Proven Results</span>
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] mb-3">
+              Loved by engineers landing top offers
             </h2>
-            <p className="text-xl text-gray-600 dark:text-slate-400">
-              See how Prep helps developers, DevOps, and product managers ace their interviews at top-tier companies.
+            <p className="text-sm text-[var(--color-text-muted)]">
+              From FAANG loops to high-growth startup rounds, candidates rely on Prep for real confidence.
             </p>
           </div>
 
-          {/* 3D Cylindrical Carousel Wrapper */}
-          <div className="relative w-full mx-auto px-4 flex flex-col items-center">
-            {/* Perspective Container */}
-            <div 
-              className="relative w-full h-[460px] flex justify-center items-center overflow-visible"
-              style={{ perspective: 1200 }}
-            >
-              {testimonials.map((testi, idx) => {
-                let diff = idx - currentReview;
-                const total = testimonials.length;
-                if (diff < -total / 2) diff += total;
-                if (diff > total / 2) diff -= total;
-
-                // Circular styles
-                const isCenter = diff === 0;
-                const isLeft = diff === -1;
-                const isRight = diff === 1;
-                const isVisible = isCenter || isLeft || isRight;
-
-                return (
-                  <motion.div
-                    key={testi.id}
-                    animate={{
-                      x: diff === 0 ? 0 : diff === -1 ? -offset : diff === 1 ? offset : diff < 0 ? -offset * 1.5 : offset * 1.5,
-                      scale: isCenter ? 1.05 : isVisible ? 0.85 : 0.7,
-                      rotateY: isCenter ? 0 : isLeft ? -35 : isRight ? 35 : diff < 0 ? -45 : 45,
-                      opacity: isCenter ? 1 : isVisible ? 0.35 : 0,
-                      zIndex: isCenter ? 10 : isVisible ? 5 : 0,
-                    }}
-                    transition={{ type: "spring", stiffness: 280, damping: 28 }}
-                    className="absolute w-[300px] sm:w-[480px] md:w-[580px] glass-card p-6 sm:p-10 rounded-3xl border border-gray-150 dark:border-slate-800 shadow-2xl flex flex-col justify-between h-[340px] select-none"
-                    style={{ 
-                      backfaceVisibility: "hidden",
-                      filter: isCenter ? "blur(0px) grayscale(0%)" : "blur(1.5px) grayscale(30%)",
-                      pointerEvents: isCenter ? "auto" : "none"
-                    }}
-                  >
-                    <div>
-                      {/* Stars */}
-                      {renderStars(testi.stars)}
-                      <p className="text-gray-600 dark:text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed mb-6 italic">
-                        "{testi.comment}"
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-4 border-t border-gray-100 dark:border-slate-800/80 pt-4">
-                      <img
-                        src={testi.avatar}
-                        alt={testi.name}
-                        className="w-14 h-14 rounded-full border border-gray-200 dark:border-slate-700 bg-white object-cover"
-                      />
-                      <div>
-                        <h4 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-slate-100">
-                          {testi.name}
-                        </h4>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {/* Navigation Controls */}
-            <div className="flex items-center gap-6 mt-8">
-              <button
-                onClick={() => setCurrentReview((prev) => (prev - 1 + testimonials.length) % testimonials.length)}
-                className="w-12 h-12 rounded-full border border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-850 hover:scale-105 active:scale-95 transition-all text-gray-600 dark:text-slate-400 cursor-pointer"
-                title="Previous Testimonial"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.slice(0, 3).map((item) => (
+              <div 
+                key={item.id}
+                className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow"
               >
-                <span className="text-xl font-bold font-mono">←</span>
-              </button>
+                <div>
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-4 text-amber-400">
+                    {[...Array(Math.floor(item.stars))].map((_, i) => (
+                      <LuStar key={i} className="w-4 h-4 fill-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed mb-6 italic">
+                    "{item.comment}"
+                  </p>
+                </div>
 
-
-              <button
-                onClick={() => setCurrentReview((prev) => (prev + 1) % testimonials.length)}
-                className="w-12 h-12 rounded-full border border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-850 hover:scale-105 active:scale-95 transition-all text-gray-600 dark:text-slate-400 cursor-pointer"
-                title="Next Testimonial"
-              >
-                <span className="text-xl font-bold font-mono">→</span>
-              </button>
-            </div>
+                <div className="flex items-center gap-3 pt-4 border-t border-[var(--color-border)]">
+                  <img 
+                    src={item.avatar} 
+                    alt={item.name}
+                    className="w-10 h-10 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)]" 
+                  />
+                  <div>
+                    <div className="text-sm font-semibold text-[var(--color-text-primary)]">{item.name}</div>
+                    <div className="text-[11px] text-[var(--color-text-muted)]">{item.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* NEW Contact Me Section */}
-      <section className="py-24 bg-slate-50 dark:bg-slate-900/30 relative overflow-hidden transition-colors duration-300 border-t border-b border-gray-100 dark:border-slate-900/50">
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-blue-50 dark:bg-blue-950/10 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
-
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="flex flex-col lg:flex-row gap-16 max-w-6xl mx-auto items-center">
-            
-            {/* Info Column (Left) */}
-            <div className="w-full lg:w-1/2 space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 text-sm font-semibold">
-                <LuMessageSquare className="text-blue-500" />
-                <span>Get In Touch</span>
-              </div>
-
-              <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 dark:text-slate-50">
-                Have questions? <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Let's talk.</span>
-              </h2>
-
-              <p className="text-lg text-gray-600 dark:text-slate-400 leading-relaxed">
-                We're here to help you get the absolute most out of Prep. Send us a message, and our team will get back to you within 24 hours.
-              </p>
-
-              <div className="space-y-6 pt-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-blue-600">
-                    <LuMail className="text-lg" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-gray-400">Email us directly</div>
-                    <a href="mailto:avinashguleria1009@gmail.com" className="text-sm font-bold hover:underline">avinashguleria1009@gmail.com</a>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-blue-600">
-                    <LuMapPin className="text-lg" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-gray-400">Our headquarters</div>
-                    <div className="text-sm font-bold">Mandi, Himachal Pradesh</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Form Column (Right) */}
-            <div className="w-full lg:w-1/2">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-slate-800 shadow-2xl p-8 lg:p-10">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-slate-50 mb-6">Send us a Message</h3>
-                
-                <form onSubmit={handleContactSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-400" htmlFor="name">Your Name</label>
-                      <input
-                        type="text"
-                        id="name"
-                        required
-                        className="premium-input"
-                        placeholder="John Doe"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-400" htmlFor="email">Email Address</label>
-                      <input
-                        type="email"
-                        id="email"
-                        required
-                        className="premium-input"
-                        placeholder="john@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400" htmlFor="subject">Subject</label>
-                    <input
-                      type="text"
-                      id="subject"
-                      className="premium-input"
-                      placeholder="How can we help?"
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400" htmlFor="message">Message</label>
-                    <textarea
-                      id="message"
-                      rows="4"
-                      required
-                      className="premium-input resize-none"
-                      placeholder="Tell us what you need help with..."
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    ></textarea>
-                  </div>
-
-                  {submitStatus === "success" && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/30 rounded-xl text-green-700 dark:text-green-400 text-xs font-bold flex items-center gap-2"
-                    >
-                      <LuCheck className="text-lg" />
-                      <span>Thank you! Your message was sent successfully.</span>
-                    </motion.div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="premium-btn py-3.5 flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      "Sending..."
-                    ) : (
-                      <>
-                        <span>Send Message</span>
-                        <LuSend className="text-sm" />
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-            </div>
-
-          </div>
+      {/* ─── Bottom CTA Banner ─── */}
+      <section className="py-20 border-t border-[var(--color-border)] bg-[var(--color-surface)] relative overflow-hidden">
+        <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-text-primary)] mb-4">
+            Ready to ace your upcoming interview?
+          </h2>
+          <p className="text-base text-[var(--color-text-secondary)] max-w-xl mx-auto mb-8">
+            Create your custom interview track in 30 seconds and start practicing with voice AI immediately.
+          </p>
+          <button
+            onClick={handleCTA}
+            className="bg-[var(--color-accent)] text-white px-8 py-4 rounded-xl font-semibold text-base hover:bg-[var(--color-accent-hover)] transition-all shadow-lg active:scale-95 inline-flex items-center gap-2"
+          >
+            Start Free Practice Now
+            <LuArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </section>
 
-      {/* NEW Production-grade Footer Section */}
-      <footer className="bg-white dark:bg-slate-950 border-t border-gray-100 dark:border-slate-900 py-16 transition-colors duration-300">
-        <div className="container mx-auto px-6 max-w-6xl">
-          
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-12 mb-16">
-            {/* Column 1: Brand details */}
-            <div className="col-span-2 space-y-6">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <LuSparkles className="text-white" />
-                </div>
-                <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-50">Prep</span>
-              </div>
-              <p className="text-gray-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm">
-                Next-generation interview preparation engine simulating actual industry loops, deep AI diagnostics, and confidence diagnostics.
-              </p>
-              
-              {/* Social Buttons */}
-              <div className="flex gap-4 pt-2">
-                <a href="https://github.com/Avinashguleria0" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800 flex items-center justify-center text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 active:scale-95 transition-all">
-                  <LuGithub className="text-lg" />
-                </a>
-                <a href="http://linkedin.com/in/avinash-guleria-a18553324" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800 flex items-center justify-center text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 active:scale-95 transition-all">
-                  <LuLinkedin className="text-lg" />
-                </a>
-                <a href="https://twitter.com/notavinashg" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800 flex items-center justify-center text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 active:scale-95 transition-all">
-                  <LuTwitter className="text-lg" />
-                </a>
-                <a href="https://www.youtube.com/@AvinashCodes" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800 flex items-center justify-center text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:scale-105 active:scale-95 transition-all">
-                  <LuYoutube className="text-lg" />
-                </a>
-              </div>
-            </div>
-
-            {/* Column 2: Product */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-gray-900 dark:text-slate-200 tracking-wider uppercase">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-500 dark:text-slate-400">
-                <li><a href="#showcase-section" className="hover:text-blue-600 transition-colors">Features</a></li>
-                <li><a href="#" onClick={handleCTA} className="hover:text-blue-600 transition-colors">Interactive Prep</a></li>
-                <li><a href="#" onClick={handleCTA} className="hover:text-blue-600 transition-colors">Voice Simulator</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors flex items-center gap-1">Pricing <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[8px] font-extrabold rounded-full">NEW</span></a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Roadmap</a></li>
-              </ul>
-            </div>
-
-            {/* Column 3: Resources */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-gray-900 dark:text-slate-200 tracking-wider uppercase">Resources</h4>
-              <ul className="space-y-2 text-sm text-gray-500 dark:text-slate-400">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">AI Concept Docs</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Practice Sets</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Developer Help</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors flex items-center gap-1">Discord <LuExternalLink className="text-[10px]" /></a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">System Status</a></li>
-              </ul>
-            </div>
-
-            {/* Column 4: Legal */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-gray-900 dark:text-slate-200 tracking-wider uppercase">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-500 dark:text-slate-400">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Security Details</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Cookie Settings</a></li>
-              </ul>
-            </div>
+      {/* ─── Footer ─── */}
+      <footer className="border-t border-[var(--color-border)] py-8 bg-[var(--color-bg)]">
+        <div className="container mx-auto px-6 max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/Proview-Symbol.png"
+              alt="Proview"
+              className="w-5 h-5 object-contain rounded-md"
+            />
+            <span className="text-sm font-bold text-[var(--color-text-primary)]">Prep</span>
+            <span className="text-xs text-[var(--color-text-muted)] ml-2">© 2026 Prep Platform. All rights reserved.</span>
           </div>
-
-
-
+          <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
+            <span>Built for serious software engineering preparation</span>
+          </div>
         </div>
       </footer>
 
-      {/* Auth Modal */}
+      {/* ─── Auth Modal ─── */}
       <Modal
         isOpen={openAuthModel}
-        onClose={() => {
-          setOpenAuthModel(false);
-          setCurrentPage("login");
-        }}
+        onClose={() => setOpenAuthModel(false)}
         hideHeader
       >
-        <div className="p-2">
-          {currentPage === "login" && <Login setCurrentPage={setCurrentPage} />}
-          {currentPage === "signup" && <SignUp setCurrentPage={setCurrentPage} />}
-        </div>
+        {currentPage === "login" ? (
+          <Login setCurrentPage={setCurrentPage} />
+        ) : (
+          <SignUp setCurrentPage={setCurrentPage} />
+        )}
       </Modal>
 
     </div>

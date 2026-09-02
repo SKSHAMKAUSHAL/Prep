@@ -1,116 +1,102 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { LuClock, LuUser, LuInfo, LuArrowRight } from "react-icons/lu";
 import Modal from "../../../components/Modal";
 import { useNavigate } from "react-router-dom";
 
 const SetupInterviewModal = ({ isOpen, onClose, sessionId }) => {
   const navigate = useNavigate();
-  const [duration, setDuration] = useState("10"); // in minutes
+  const [duration, setDuration] = useState("10");
   const [persona, setPersona] = useState("standard");
 
   const handleStartInterview = () => {
-    // Navigate to live interview page with query params (Phase 3)
     navigate(`/interview/${sessionId}/live?duration=${duration}&persona=${persona}`);
     onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Interview Setup">
-      <div className="p-6 w-full space-y-8 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-colors duration-300">
-        
-        {/* Rules & Info Section */}
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 p-4 rounded-xl flex gap-3 items-start">
-          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <LuInfo className="text-blue-600 dark:text-blue-400 w-4 h-4" />
-          </div>
+      <div className="p-5 space-y-6">
+        {/* Info */}
+        <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-3 rounded-lg flex gap-2.5 items-start">
+          <LuInfo className="text-[var(--color-accent)] w-4 h-4 mt-0.5 flex-shrink-0" />
           <div>
-            <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-1">How it works</h4>
-            <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc pl-4">
-              <li>This is a live voice-based mock interview.</li>
-              <li>You can speak normally. The AI will listen, evaluate, and respond.</li>
-              <li><span className="font-semibold">Stuck?</span> Just ask Prep for a hint or help.</li>
+            <h4 className="text-xs font-medium text-[var(--color-text-primary)] mb-1">How it works</h4>
+            <ul className="text-xs text-[var(--color-text-muted)] space-y-0.5">
+              <li>• Live voice-based mock interview with AI</li>
+              <li>• Speak normally — AI listens, evaluates, responds</li>
+              <li>• Ask for hints anytime if you're stuck</li>
             </ul>
           </div>
         </div>
 
-        {/* Configuration Options */}
-        <div className="space-y-6">
-          
-          {/* Duration */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-slate-100 mb-3">
-              <LuClock className="text-gray-500 dark:text-slate-400" />
-              Interview Duration
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {["5", "10", "15"].map((time) => (
-                <button
-                  key={time}
-                  onClick={() => setDuration(time)}
-                  className={`py-3 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                    duration === time 
-                      ? "bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-950/50 dark:border-blue-500 dark:text-blue-400 shadow-sm" 
-                      : "bg-white border-gray-200 text-gray-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-500"
-                  }`}
-                >
-                  {time} min
-                </button>
-              ))}
-            </div>
+        {/* Duration */}
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+            <LuClock className="w-3.5 h-3.5" />
+            Duration
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {["5", "10", "15"].map((time) => (
+              <button
+                key={time}
+                onClick={() => setDuration(time)}
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  duration === time
+                    ? "bg-[var(--color-accent-subtle)] border-[var(--color-accent)]/30 text-[var(--color-accent)]"
+                    : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]/20"
+                }`}
+              >
+                {time} min
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Persona */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-slate-100 mb-3">
-              <LuUser className="text-gray-500 dark:text-slate-400" />
-              Interviewer Persona
-            </label>
-            <div className="space-y-3">
-              {[
-                { id: "standard", label: "Balanced & Professional", desc: "Standard mix of behavioral and technical." },
-                { id: "strict", label: "Strict Technical", desc: "Focuses deeply on code and edge cases." },
-                { id: "friendly", label: "Friendly HR", desc: "Focuses on culture fit and communication." }
-              ].map((p) => (
-                <div 
-                  key={p.id}
-                  onClick={() => setPersona(p.id)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    persona === p.id
-                      ? "bg-blue-50 border-blue-600 dark:bg-blue-950/50 dark:border-blue-500 shadow-sm"
-                      : "bg-white border-gray-200 dark:bg-slate-800 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500"
-                  }`}
-                >
-                  <div>
-                    <h4 className={`font-semibold ${persona === p.id ? "text-blue-900 dark:text-blue-300" : "text-gray-900 dark:text-slate-100"}`}>
-                      {p.label}
-                    </h4>
-                    <p className={`text-xs mt-1 ${persona === p.id ? "text-blue-700 dark:text-blue-400" : "text-gray-500 dark:text-slate-400"}`}>
-                      {p.desc}
-                    </p>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    persona === p.id ? "border-blue-600 dark:border-blue-500" : "border-gray-300 dark:border-slate-600"
-                  }`}>
-                    {persona === p.id && <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500" />}
-                  </div>
+        {/* Persona */}
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+            <LuUser className="w-3.5 h-3.5" />
+            Interviewer Style
+          </label>
+          <div className="space-y-2">
+            {[
+              { id: "standard", label: "Balanced", desc: "Standard behavioral and technical mix" },
+              { id: "strict", label: "Strict Technical", desc: "Deep focus on code and edge cases" },
+              { id: "friendly", label: "Friendly HR", desc: "Culture fit and communication focus" }
+            ].map((p) => (
+              <div
+                key={p.id}
+                onClick={() => setPersona(p.id)}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors flex items-center justify-between ${
+                  persona === p.id
+                    ? "bg-[var(--color-accent-subtle)] border-[var(--color-accent)]/30"
+                    : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-accent)]/20"
+                }`}
+              >
+                <div>
+                  <h4 className={`text-sm font-medium ${persona === p.id ? "text-[var(--color-accent)]" : "text-[var(--color-text-primary)]"}`}>
+                    {p.label}
+                  </h4>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{p.desc}</p>
                 </div>
-              ))}
-            </div>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                  persona === p.id ? "border-[var(--color-accent)]" : "border-[var(--color-border)]"
+                }`}>
+                  {persona === p.id && <div className="w-2 h-2 rounded-full bg-[var(--color-accent)]" />}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* CTA */}
-        <div className="pt-4 border-t border-gray-100 dark:border-slate-800">
-          <button 
-            onClick={handleStartInterview}
-            className="w-full bg-gray-900 dark:bg-slate-50 text-white dark:text-slate-950 font-medium py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-200 transition-all active:scale-[0.98] shadow-md shadow-gray-900/10 cursor-pointer"
-          >
-            Start Live Interview
-            <LuArrowRight />
-          </button>
-        </div>
-
+        <button
+          onClick={handleStartInterview}
+          className="premium-btn py-3"
+        >
+          Start Live Interview
+          <LuArrowRight className="w-4 h-4" />
+        </button>
       </div>
     </Modal>
   );

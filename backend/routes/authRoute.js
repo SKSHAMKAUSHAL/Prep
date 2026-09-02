@@ -2,12 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { registerUser, loginUser, googleLogin, getUserProfile, updateUserProfile } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware')
-const multer = require("multer");
+const fs = require("fs");
 const path = require("path");
+const multer = require("multer");
+const uploadDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/");
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueName = Date.now() + path.extname(file.originalname);
