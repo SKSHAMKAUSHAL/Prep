@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 /**
  * Custom hook for Text-To-Speech (TTS) using window.speechSynthesis
+ * Enhanced for WebSocket streaming and barge-in interruption handling.
  * @param {string} persona - Interviewer style ('strict' | 'friendly' | 'standard')
  */
 export const useVoiceTTS = (persona = 'standard') => {
@@ -18,6 +19,20 @@ export const useVoiceTTS = (persona = 'standard') => {
     setIsSpeaking(false);
   }, []);
 
+  /**
+   * Instantly cancel ongoing voice output when candidate interrupts (barge-in)
+   */
+  const handleInterruption = useCallback(() => {
+    stopSpeaking();
+  }, [stopSpeaking]);
+
+  /**
+   * Appends incoming real-time token chunks streamed via WebSocket
+   */
+  const appendStreamedChunk = useCallback((chunk, isFirstToken = false) => {
+    setAiMessage((prev) => (isFirstToken ? chunk : prev + chunk));
+  }, []);
+
   const speakText = useCallback((text, callback) => {
     if (!synthRef.current || !text) {
       if (callback) callback();
@@ -31,12 +46,12 @@ export const useVoiceTTS = (persona = 'standard') => {
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = synthRef.current.getVoices();
     const preferred = voices.find(
-      v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Female'))
+      v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Natural') || v.name.includes('Female'))
     );
     if (preferred) utterance.voice = preferred;
 
-    utterance.rate = 0.95;
-    utterance.pitch = persona === 'strict' ? 0.8 : persona === 'friendly' ? 1.2 : 1.0;
+    utterance.rate = 1.0;
+    utterance.pitch = persona === 'strict' ? 0.85 : persona === 'friendly' ? 1.15 : 1.0;
 
     utterance.onstart = () => {
       setIsSpeaking(true);
@@ -48,7 +63,7 @@ export const useVoiceTTS = (persona = 'standard') => {
     };
 
     utterance.onerror = (e) => {
-      console.error('[TTS Error]', e);
+      console.warn('[TTS Notice]', e.error || e.message || 'Speech canceled');
       setIsSpeaking(false);
       if (callback) callback();
     };
@@ -68,6 +83,8 @@ export const useVoiceTTS = (persona = 'standard') => {
     aiMessage,
     speakText,
     stopSpeaking,
+    handleInterruption,
+    appendStreamedChunk,
     setAiMessage,
   };
 };

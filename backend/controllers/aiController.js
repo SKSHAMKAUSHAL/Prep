@@ -1,5 +1,7 @@
 const Groq = require("groq-sdk");
 const Session = require("../models/Session");
+const logger = require("../utils/logger");
+const { AppError } = require("../middlewares/errorHandler");
 const {
   conceptExplainPrompt,
   questionAnswerPrompt,
@@ -18,7 +20,10 @@ async function createChatCompletion(options) {
       ...options,
     });
   } catch (error) {
-    console.warn(`Primary model (${PRIMARY_MODEL}) failed, trying fallback (${FALLBACK_MODEL}):`, error.message);
+    logger.warn(
+      { error: error.message, primaryModel: PRIMARY_MODEL, fallbackModel: FALLBACK_MODEL },
+      `Primary model failed, trying fallback model`
+    );
     return await client.chat.completions.create({
       model: FALLBACK_MODEL,
       ...options,
@@ -27,8 +32,8 @@ async function createChatCompletion(options) {
 }
 
 function parseJsonFromLlm(rawText) {
-  if (!rawText) throw new Error("Empty response from AI");
-  
+  if (!rawText) throw new AppError("Empty response received from AI model", 502);
+
   const cleaned = rawText
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
@@ -38,13 +43,17 @@ function parseJsonFromLlm(rawText) {
   try {
     return JSON.parse(cleaned);
   } catch (e) {
-    const firstBracket = rawText.indexOf('[');
-    const lastBracket = rawText.lastIndexOf(']');
-    const firstBrace = rawText.indexOf('{');
-    const lastBrace = rawText.lastIndexOf('}');
+    const firstBracket = rawText.indexOf("[");
+    const lastBracket = rawText.lastIndexOf("]");
+    const firstBrace = rawText.indexOf("{");
+    const lastBrace = rawText.lastIndexOf("}");
 
     // Try bracket substring for arrays
-    if (firstBracket !== -1 && lastBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+    if (
+      firstBracket !== -1 &&
+      lastBracket !== -1 &&
+      (firstBrace === -1 || firstBracket < firstBrace)
+    ) {
       try {
         const sub = rawText.substring(firstBracket, lastBracket + 1);
         return JSON.parse(sub);
@@ -55,10 +64,10 @@ function parseJsonFromLlm(rawText) {
 
     // Attempt to recover truncated JSON array (cut off at max tokens)
     if (firstBracket !== -1) {
-      const lastClosedObject = rawText.lastIndexOf('}');
+      const lastClosedObject = rawText.lastIndexOf("}");
       if (lastClosedObject > firstBracket) {
         try {
-          const repaired = rawText.substring(firstBracket, lastClosedObject + 1) + ']';
+          const repaired = rawText.substring(firstBracket, lastClosedObject + 1) + "]";
           const data = JSON.parse(repaired);
           if (Array.isArray(data) && data.length > 0) {
             return data;
@@ -89,25 +98,20 @@ function parseJsonFromLlm(rawText) {
       }
     }
 
-    throw e;
+    logger.error({ rawText }, "Failed to parse JSON response from LLM");
+    throw new AppError("Failed to parse valid structured JSON from AI response", 502);
   }
 }
 
-const generateInterviewQuestions = async (req, res) => {
+const generateInterviewQuestions = async (req, res, next) => {
+  const startTime = Date.now();
   try {
     const { role, experience, topicsToFocus, numberOfQuestions } = req.body;
-    if (!role || !experience || !topicsToFocus || !numberOfQuestions) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
     const count = Math.min(Math.max(parseInt(numberOfQuestions, 10) || 5, 1), 15);
 
-    const prompt = questionAnswerPrompt(
-      role,
-      experience,
-      topicsToFocus,
-      count
-    );
+    logger.info({ role, experience, count, reqId: req.id }, "Generating interview questions");
+
+    const prompt = questionAnswerPrompt(role, experience, topicsToFocus, count);
 
     const response = await createChatCompletion({
       messages: [{ role: "user", content: prompt }],
@@ -118,22 +122,24 @@ const generateInterviewQuestions = async (req, res) => {
     const rawText = response.choices[0].message.content;
     const data = parseJsonFromLlm(rawText);
 
+    logger.info(
+      { latencyMs: Date.now() - startTime, questionCount: Array.isArray(data) ? data.length : 1, reqId: req.id },
+      "Interview questions generated successfully"
+    );
+
     res.status(200).json(data);
   } catch (error) {
-    console.error("GENERATION ERROR:", error);
-    res.status(500).json({
-      message: "Failed to generate questions",
-      error: error.message,
-    });
+    logger.error({ error: error.message, latencyMs: Date.now() - startTime, reqId: req.id }, "Question generation error");
+    next(error);
   }
 };
 
-const generateConceptExplanation = async (req, res) => {
+const generateConceptExplanation = async (req, res, next) => {
+  const startTime = Date.now();
   try {
     const { question } = req.body;
-    if (!question) {
-      return res.status(400).json({ message: "Question is required" });
-    }
+
+    logger.info({ questionLength: question.length, reqId: req.id }, "Generating concept explanation");
 
     const prompt = conceptExplainPrompt(question);
 
@@ -146,22 +152,24 @@ const generateConceptExplanation = async (req, res) => {
     const rawText = response.choices[0].message.content;
     const data = parseJsonFromLlm(rawText);
 
+    logger.info(
+      { latencyMs: Date.now() - startTime, reqId: req.id },
+      "Concept explanation generated successfully"
+    );
+
     res.status(200).json(data);
   } catch (error) {
-    console.error("EXPLANATION ERROR:", error);
-    res.status(500).json({
-      message: "Failed to generate explanation",
-      error: error.message,
-    });
+    logger.error({ error: error.message, latencyMs: Date.now() - startTime, reqId: req.id }, "Concept explanation error");
+    next(error);
   }
 };
 
-const evaluateLiveAnswer = async (req, res) => {
+const evaluateLiveAnswer = async (req, res, next) => {
+  const startTime = Date.now();
   try {
     const { question, userAnswer, persona, sessionId, history } = req.body;
-    if (!question || userAnswer === undefined) {
-      return res.status(400).json({ message: "Question and userAnswer are required" });
-    }
+
+    logger.info({ sessionId, persona, reqId: req.id }, "Evaluating live interview answer");
 
     // Fetch session details for context if provided
     let sessionContext = "";
@@ -179,11 +187,15 @@ Key topics to focus on: ${(session.topicsToFocus || []).join(", ") || "Software 
     // Parse history for reference
     let historyContext = "";
     if (history && Array.isArray(history) && history.length > 0) {
-      historyContext = history.map((item, idx) => `
+      historyContext = history
+        .map(
+          (item, idx) => `
 - Question ${idx + 1}: "${item.question}"
   User's Answer: "${item.userAnswer || "No answer provided"}"
   Score: ${item.evaluation?.score !== undefined ? `${item.evaluation.score}/10` : "Unevaluated"}
-      `.trim()).join("\n");
+      `.trim()
+        )
+        .join("\n");
     }
 
     const prompt = evaluateAnswerPrompt({
@@ -202,15 +214,21 @@ Key topics to focus on: ${(session.topicsToFocus || []).join(", ") || "Software 
 
     const rawText = response.choices[0].message.content;
     const data = parseJsonFromLlm(rawText);
-    
+
+    logger.info(
+      { latencyMs: Date.now() - startTime, score: data?.score, reqId: req.id },
+      "Live answer evaluated successfully"
+    );
+
     res.status(200).json(data);
   } catch (error) {
-    console.error("EVALUATION ERROR:", error);
-    res.status(500).json({
-      message: "Failed to evaluate answer",
-      error: error.message,
-    });
+    logger.error({ error: error.message, latencyMs: Date.now() - startTime, reqId: req.id }, "Live answer evaluation error");
+    next(error);
   }
 };
 
-module.exports = { generateInterviewQuestions, generateConceptExplanation, evaluateLiveAnswer };
+module.exports = {
+  generateInterviewQuestions,
+  generateConceptExplanation,
+  evaluateLiveAnswer,
+};
