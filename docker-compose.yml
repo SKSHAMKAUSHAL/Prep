@@ -1,0 +1,151 @@
+name: prep-platform
+
+services:
+  # ==========================================
+  # Database: MongoDB 7
+  # ==========================================
+  mongo:
+    image: mongo:7.0
+    container_name: prep-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: prep
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - prep-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ==========================================
+  # Cache & Broker: Redis 7
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: prep-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - prep-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # ==========================================
+  # Vector Database: Qdrant
+  # ==========================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: prep-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - prep-network
+
+  # ==========================================
+  # AI Orchestration: LangGraph Multi-Agent FSM
+  # ==========================================
+  langgraph:
+    build:
+      context: ./langgraph-service
+      dockerfile: Dockerfile
+    container_name: prep-langgraph
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PORT: 8001
+      REDIS_URL: redis://redis:6379
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: system_design_rubrics
+    env_file:
+      - .env.docker
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    networks:
+      - prep-network
+
+  # ==========================================
+  # API Gateway: Node.js / Express
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prep-backend
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      NODE_ENV: production
+      PORT: 9000
+      MONGO_URI: mongodb://mongo:27017/prep
+      REDIS_URL: redis://redis:6379
+      LANGGRAPH_SERVICE_URL: http://langgraph:8001
+      QDRANT_URL: http://qdrant:6333
+      ALLOWED_ORIGINS: "http://localhost,http://localhost:80,http://localhost:5173"
+    env_file:
+      - .env.docker
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      langgraph:
+        condition: service_started
+    volumes:
+      - backend-uploads:/app/uploads
+    networks:
+      - prep-network
+
+  # ==========================================
+  # Client: React Vite SPA + Nginx
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: prep-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - prep-network
+
+networks:
+  prep-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
+  redis-data:
+    driver: local
+  qdrant-data:
+    driver: local
+  backend-uploads:
+    driver: local
