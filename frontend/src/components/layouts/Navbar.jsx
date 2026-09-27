@@ -16,7 +16,12 @@ const Navbar = () => {
     <header className="fixed top-0 left-0 right-0 h-16 bg-[var(--color-surface)]/90 backdrop-blur-md border-b border-[var(--color-border)] z-50 transition-colors duration-200">
       <div className="container mx-auto h-full flex items-center justify-between px-6 max-w-7xl">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link 
+            to="/" 
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-3 group cursor-pointer"
+            title="Prep - Return to Landing Page"
+          >
             <img
               src="/Proview-Symbol.png"
               alt="Prep"

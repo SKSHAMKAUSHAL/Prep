@@ -1,5 +1,5 @@
 import React, { useMemo, useContext, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { LuTarget, LuMessageSquare, LuChevronLeft, LuZap, LuCircleAlert, LuVolume2, LuSun, LuMoon, LuChevronDown } from 'react-icons/lu';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -173,6 +173,11 @@ const FeedbackReport = () => {
             >
               <LuChevronLeft className="text-lg" />
             </button>
+            <Link to="/" className="flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-opacity" title="Prep - Return to Landing Page">
+              <img src="/Proview-Symbol.png" alt="Prep" className="w-5 h-5 object-contain rounded border border-[var(--color-border)] shadow-xs group-hover:scale-105 transition-transform" />
+              <span className="text-xs font-bold text-[var(--color-text-primary)]">Prep</span>
+            </Link>
+            <div className="w-px h-3.5 bg-[var(--color-border)]" />
             <h1 className="text-sm font-semibold">Interview Feedback</h1>
           </div>
           <div className="flex items-center gap-2">

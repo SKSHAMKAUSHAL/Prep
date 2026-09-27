@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import SecureHeroMedia from "../components/media/SecureHeroMedia";
 import { LuSparkles, LuBrain, LuTarget, LuZap, LuSun, LuMoon,
          LuMic, LuVolume2, LuCheck, LuStar, LuArrowRight, LuArrowLeft,
          LuCode, LuPlay, LuFileText, LuPin, LuTrendingUp, LuChevronDown,
@@ -171,16 +172,21 @@ const LandingPage = () => {
       {/* ─── Header ─── */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[var(--color-surface)]/90 backdrop-blur-md border-b border-[var(--color-border)] transition-colors duration-200">
         <div className="container mx-auto px-6 h-full flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
+            title="Prep - Return to Landing Page"
+          >
             <img
               src="/Proview-Symbol.png"
               alt="Prep"
-              className="w-8 h-8 object-contain rounded-lg border border-[var(--color-border)] shadow-xs"
+              className="w-8 h-8 object-contain rounded-lg border border-[var(--color-border)] shadow-xs group-hover:scale-105 transition-transform"
             />
             <span className="text-lg font-bold tracking-tight text-[var(--color-text-primary)]">
               Prep
             </span>
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
@@ -353,17 +359,11 @@ const LandingPage = () => {
                       </div>
                     </div>
 
-                    {/* Actual Video with Smooth Fade-In */}
-                    <video 
-                      src="/subject.mp4" 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline
-                      preload="auto"
-                      onLoadedData={() => setIsVideoLoaded(true)}
-                      onCanPlay={() => setIsVideoLoaded(true)}
-                      className={`w-full h-full object-cover select-none pointer-events-none transition-opacity duration-700 ${
+                    {/* In-Memory Decrypted Stream (Anti-Download & DevTools Media Shielded) */}
+                    <SecureHeroMedia 
+                      streamSrc="/assets/hero-stream.bin" 
+                      onLoaded={() => setIsVideoLoaded(true)}
+                      className={`transition-opacity duration-700 ${
                         isVideoLoaded ? "opacity-100" : "opacity-0"
                       }`}
                     />
@@ -960,15 +960,20 @@ const LandingPage = () => {
       {/* ─── Footer ─── */}
       <footer className="border-t border-[var(--color-border)] py-8 bg-[var(--color-bg)]">
         <div className="container mx-auto px-6 max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-2.5 cursor-pointer group hover:opacity-85 transition-opacity"
+            title="Prep - Return to Top"
+          >
             <img
               src="/Proview-Symbol.png"
-              alt="Proview"
-              className="w-5 h-5 object-contain rounded-md"
+              alt="Prep"
+              className="w-5 h-5 object-contain rounded-md group-hover:scale-105 transition-transform"
             />
             <span className="text-sm font-bold text-[var(--color-text-primary)]">Prep</span>
             <span className="text-xs text-[var(--color-text-muted)] ml-2">© 2026 Prep Platform. All rights reserved.</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
             <span>Built for serious software engineering preparation</span>
           </div>
