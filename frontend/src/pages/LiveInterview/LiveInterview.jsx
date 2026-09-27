@@ -10,8 +10,11 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { useVoiceTTS } from '../../hooks/useVoiceTTS';
 import { useMicMeter } from '../../hooks/useMicMeter';
 import { useVoiceSTT } from '../../hooks/useVoiceSTT';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { useGazeTracker } from '../../hooks/useGazeTracker';
 import AIPresence from './components/AIPresence';
 import SettingsPopover from './components/SettingsPopover';
+import GazeTrackerHUD from './components/GazeTrackerHUD';
 
 const LiveInterview = () => {
   const { sessionId } = useParams();
@@ -34,7 +37,33 @@ const LiveInterview = () => {
 
   const currentQuestionIndexRef = useRef(0);
 
-  // 1. Microphone & Audio Level Meter Hook
+  // 1. WebSocket Streaming Voice Pipeline Hook
+  const token = localStorage.getItem('token');
+  const { isConnected, sendInterruption, sendGazeTelemetry } = useWebSocket({
+    token,
+    sessionId,
+    autoConnect: Boolean(token),
+  });
+
+  // 1b. Browser-Native Behavioral Analysis (MediaPipe Face Mesh & Gaze Tracking)
+  const {
+    videoRef: gazeVideoRef,
+    isCameraActive,
+    faceDetected,
+    gazeDirection,
+    eyeContactScore,
+    isLookingAway,
+    attentionPercentage,
+    distractionCount,
+    startCamera,
+    stopCamera,
+  } = useGazeTracker({
+    sendTelemetryOverWs: sendGazeTelemetry,
+    sampleIntervalMs: 1500,
+    autoStart: false,
+  });
+
+  // 2. Microphone & Audio Level Meter Hook
   const {
     micDevices,
     selectedMicId,
@@ -49,10 +78,10 @@ const LiveInterview = () => {
     resumeAudioContext,
   } = useMicMeter();
 
-  // 2. Text-To-Speech Hook
+  // 3. Text-To-Speech Hook
   const { isSpeaking, aiMessage, speakText, stopSpeaking } = useVoiceTTS(persona);
 
-  // 3. Speech-To-Text Hook
+  // 4. Speech-To-Text Hook with Barge-In Interruption Support
   const {
     isListening,
     transcript,
@@ -65,6 +94,15 @@ const LiveInterview = () => {
     ensureMicAccess,
     refreshMicStream,
     resumeAudioContext,
+    onSpeechStart: () => {
+      // Instant candidate barge-in: cancel client TTS and signal server
+      if (isSpeaking) {
+        stopSpeaking();
+        if (isConnected) {
+          sendInterruption();
+        }
+      }
+    },
     onListeningStateChange: (listening) => {
       if (listening) {
         setStatus('listening');
@@ -269,6 +307,14 @@ const LiveInterview = () => {
             <span className="text-xs font-medium text-[var(--color-text-secondary)] truncate max-w-[200px]">
               {sessionData?.role || 'Interview'}
             </span>
+            <span className={`hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+              isConnected
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              {isConnected ? 'Voice Stream' : 'Voice Pipeline'}
+            </span>
           </div>
 
           {/* Center: Progress + Timer */}
@@ -456,6 +502,20 @@ const LiveInterview = () => {
           </p>
         </div>
       </div>
+
+      {/* Browser-Native Behavioral Vision HUD */}
+      <GazeTrackerHUD
+        videoRef={gazeVideoRef}
+        isCameraActive={isCameraActive}
+        faceDetected={faceDetected}
+        gazeDirection={gazeDirection}
+        eyeContactScore={eyeContactScore}
+        isLookingAway={isLookingAway}
+        attentionPercentage={attentionPercentage}
+        distractionCount={distractionCount}
+        startCamera={startCamera}
+        stopCamera={stopCamera}
+      />
     </div>
   );
 };
