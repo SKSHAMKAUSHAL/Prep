@@ -20,6 +20,7 @@ const LandingPage = () => {
   const [openAuthModel, setOpenAuthModel] = useState(false);
   const [currentPage, setCurrentPage] = useState("login");
   const [activeFeature, setActiveFeature] = useState(0);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   // Interactive Simulator Tab state
   const [demoRole, setDemoRole] = useState("Frontend Architect");
@@ -323,14 +324,48 @@ const LandingPage = () => {
                   </div>
 
                   {/* Video Showcase Container */}
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
+                  <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900">
+                    
+                    {/* Smooth Animated Skeleton & Pulse Loader (Shown while video buffers/renders) */}
+                    <div 
+                      className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm transition-opacity duration-700 pointer-events-none ${
+                        isVideoLoaded ? "opacity-0" : "opacity-100"
+                      }`}
+                    >
+                      {/* Animated Shimmer Wave */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                      
+                      <div className="relative flex flex-col items-center gap-3">
+                        <div className="relative flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                            <LuSparkles className="w-6 h-6 animate-pulse" />
+                          </div>
+                          <span className="absolute -inset-1 rounded-2xl bg-indigo-500/20 blur-sm animate-ping pointer-events-none" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-semibold text-slate-200 tracking-wide">
+                            Initializing AI Interview Session
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Loading real-time voice & video stream...
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actual Video with Smooth Fade-In */}
                     <video 
                       src="/subject.mp4" 
                       autoPlay 
                       loop 
                       muted 
                       playsInline
-                      className="w-full h-full object-cover select-none pointer-events-none"
+                      preload="auto"
+                      onLoadedData={() => setIsVideoLoaded(true)}
+                      onCanPlay={() => setIsVideoLoaded(true)}
+                      className={`w-full h-full object-cover select-none pointer-events-none transition-opacity duration-700 ${
+                        isVideoLoaded ? "opacity-100" : "opacity-0"
+                      }`}
                     />
 
                     {/* Overlay: Live AI Interview Status Tag */}
