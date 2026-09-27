@@ -19,6 +19,13 @@ class QdrantRAGService:
     _is_qdrant_available: Optional[bool] = None
 
     @classmethod
+    def _get_headers(cls) -> Dict[str, str]:
+        headers = {}
+        if settings.QDRANT_API_KEY:
+            headers["api-key"] = settings.QDRANT_API_KEY
+        return headers
+
+    @classmethod
     def initialize(cls):
         """
         Initializes collection in Qdrant and populates in-memory fallback index.
@@ -35,7 +42,6 @@ class QdrantRAGService:
                 "payload": rubric,
             })
 
-
         # Try to connect to Qdrant service
         cls.ensure_qdrant_collection()
 
@@ -46,7 +52,7 @@ class QdrantRAGService:
         """
         url = f"{settings.QDRANT_URL}/collections/{settings.QDRANT_COLLECTION}"
         try:
-            with httpx.Client(timeout=1.5) as client:
+            with httpx.Client(timeout=1.5, headers=cls._get_headers()) as client:
                 res = client.get(url)
                 if res.status_code == 200:
                     cls._is_qdrant_available = True
@@ -98,7 +104,7 @@ class QdrantRAGService:
             })
 
         try:
-            with httpx.Client(timeout=3.0) as client:
+            with httpx.Client(timeout=3.0, headers=cls._get_headers()) as client:
                 res = client.put(url, json={"points": points})
                 if res.status_code in (200, 201):
                     logger.info(f"Seeded {len(points)} rubrics into Qdrant vector database")
@@ -140,7 +146,7 @@ class QdrantRAGService:
                 if must_filters:
                     req_body["filter"] = {"must": must_filters}
 
-                with httpx.Client(timeout=1.5) as client:
+                with httpx.Client(timeout=1.5, headers=cls._get_headers()) as client:
                     res = client.post(url, json=req_body)
                     if res.status_code == 200:
                         results = res.json().get("result", [])
