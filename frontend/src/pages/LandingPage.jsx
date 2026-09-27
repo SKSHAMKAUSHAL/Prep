@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import SecureHeroMedia from "../components/media/SecureHeroMedia";
 import { LuSparkles, LuBrain, LuTarget, LuZap, LuSun, LuMoon,
          LuMic, LuVolume2, LuCheck, LuStar, LuArrowRight, LuArrowLeft,
          LuCode, LuPlay, LuFileText, LuPin, LuTrendingUp, LuChevronDown,
@@ -20,6 +21,7 @@ const LandingPage = () => {
   const [openAuthModel, setOpenAuthModel] = useState(false);
   const [currentPage, setCurrentPage] = useState("login");
   const [activeFeature, setActiveFeature] = useState(0);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   // Interactive Simulator Tab state
   const [demoRole, setDemoRole] = useState("Frontend Architect");
@@ -170,16 +172,21 @@ const LandingPage = () => {
       {/* ─── Header ─── */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[var(--color-surface)]/90 backdrop-blur-md border-b border-[var(--color-border)] transition-colors duration-200">
         <div className="container mx-auto px-6 h-full flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
+            title="Prep - Return to Landing Page"
+          >
             <img
               src="/Proview-Symbol.png"
               alt="Prep"
-              className="w-8 h-8 object-contain rounded-lg border border-[var(--color-border)] shadow-xs"
+              className="w-8 h-8 object-contain rounded-lg border border-[var(--color-border)] shadow-xs group-hover:scale-105 transition-transform"
             />
             <span className="text-lg font-bold tracking-tight text-[var(--color-text-primary)]">
               Prep
             </span>
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
@@ -323,14 +330,42 @@ const LandingPage = () => {
                   </div>
 
                   {/* Video Showcase Container */}
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
-                    <video 
-                      src="/subject.mp4" 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline
-                      className="w-full h-full object-cover select-none pointer-events-none"
+                  <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900">
+                    
+                    {/* Smooth Animated Skeleton & Pulse Loader (Shown while video buffers/renders) */}
+                    <div 
+                      className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm transition-opacity duration-700 pointer-events-none ${
+                        isVideoLoaded ? "opacity-0" : "opacity-100"
+                      }`}
+                    >
+                      {/* Animated Shimmer Wave */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                      
+                      <div className="relative flex flex-col items-center gap-3">
+                        <div className="relative flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                            <LuSparkles className="w-6 h-6 animate-pulse" />
+                          </div>
+                          <span className="absolute -inset-1 rounded-2xl bg-indigo-500/20 blur-sm animate-ping pointer-events-none" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-semibold text-slate-200 tracking-wide">
+                            Initializing AI Interview Session
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Loading real-time voice & video stream...
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* In-Memory Decrypted Stream (Anti-Download & DevTools Media Shielded) */}
+                    <SecureHeroMedia 
+                      streamSrc="/assets/hero-stream.bin" 
+                      onLoaded={() => setIsVideoLoaded(true)}
+                      className={`transition-opacity duration-700 ${
+                        isVideoLoaded ? "opacity-100" : "opacity-0"
+                      }`}
                     />
 
                     {/* Overlay: Live AI Interview Status Tag */}
@@ -925,15 +960,20 @@ const LandingPage = () => {
       {/* ─── Footer ─── */}
       <footer className="border-t border-[var(--color-border)] py-8 bg-[var(--color-bg)]">
         <div className="container mx-auto px-6 max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-2.5 cursor-pointer group hover:opacity-85 transition-opacity"
+            title="Prep - Return to Top"
+          >
             <img
               src="/Proview-Symbol.png"
-              alt="Proview"
-              className="w-5 h-5 object-contain rounded-md"
+              alt="Prep"
+              className="w-5 h-5 object-contain rounded-md group-hover:scale-105 transition-transform"
             />
             <span className="text-sm font-bold text-[var(--color-text-primary)]">Prep</span>
             <span className="text-xs text-[var(--color-text-muted)] ml-2">© 2026 Prep Platform. All rights reserved.</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
             <span>Built for serious software engineering preparation</span>
           </div>

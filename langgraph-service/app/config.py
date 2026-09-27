@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # Vector Database (Qdrant) & RAG Settings
     QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_API_KEY: str = ""
     QDRANT_COLLECTION: str = "system_design_rubrics"
     VECTOR_DIM: int = 128
 

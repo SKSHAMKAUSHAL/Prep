@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuMic, LuSquare, LuPhoneOff, LuSettings, LuChevronDown } from 'react-icons/lu';
 import axiosInstance from '../../utils/axioInstance';
@@ -292,10 +292,18 @@ const LiveInterview = () => {
         <div className="h-12 flex items-center justify-between px-4 md:px-6">
           {/* Left: Logo + Role */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" />
-              <span className="text-xs font-semibold text-[var(--color-text-primary)]">Prep</span>
-            </div>
+            <Link 
+              to="/" 
+              className="flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-opacity"
+              title="Prep - Return to Landing Page"
+            >
+              <img
+                src="/Proview-Symbol.png"
+                alt="Prep"
+                className="w-5 h-5 object-contain rounded border border-[var(--color-border)] shadow-xs group-hover:scale-105 transition-transform"
+              />
+              <span className="text-xs font-bold text-[var(--color-text-primary)]">Prep</span>
+            </Link>
             <div className="w-px h-4 bg-[var(--color-border)]" />
             <span className="text-xs font-medium text-[var(--color-text-secondary)] truncate max-w-[200px]">
               {sessionData?.role || 'Interview'}
