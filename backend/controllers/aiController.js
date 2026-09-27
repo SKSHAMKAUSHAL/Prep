@@ -2,10 +2,13 @@ const Groq = require("groq-sdk");
 const Session = require("../models/Session");
 const logger = require("../utils/logger");
 const { AppError } = require("../middlewares/errorHandler");
+const User = require("../models/User");
 const {
   conceptExplainPrompt,
   questionAnswerPrompt,
   evaluateAnswerPrompt,
+  questionChatPrompt,
+  doubtSolverPrompt,
 } = require("../utils/prompts");
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -227,8 +230,142 @@ Key topics to focus on: ${(session.topicsToFocus || []).join(", ") || "Software 
   }
 };
 
+/**
+ * Interactive chat about a specific question with full track context.
+ * Deducts 10 tokens via middleware.
+ */
+const chatWithQuestionContext = async (req, res, next) => {
+  const startTime = Date.now();
+  try {
+    const { question, answer, role, experience, topicsToFocus, chatHistory, userMessage } = req.body;
+
+    if (!userMessage || !userMessage.trim()) {
+      return next(new AppError("User message is required", 400));
+    }
+
+    logger.info({ userId: req.user?._id, reqId: req.id }, "Handling question contextual chat");
+
+    const prompt = questionChatPrompt({
+      question,
+      answer,
+      role,
+      experience,
+      topicsToFocus,
+      chatHistory,
+      userMessage,
+    });
+
+    const response = await createChatCompletion({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2048,
+    });
+
+    const reply = response.choices[0].message.content;
+
+    logger.info(
+      { latencyMs: Date.now() - startTime, remainingTokens: req.userTokens, reqId: req.id },
+      "Question contextual chat reply generated"
+    );
+
+    res.status(200).json({
+      reply,
+      tokensRemaining: req.userTokens,
+      tokensDeducted: req.tokensDeducted || 10,
+    });
+  } catch (error) {
+    logger.error({ error: error.message, latencyMs: Date.now() - startTime, reqId: req.id }, "Question chat error");
+    next(error);
+  }
+};
+
+/**
+ * Dedicated Doubt Solver technical assistant.
+ * Deducts 10 tokens via middleware.
+ */
+const solveDoubt = async (req, res, next) => {
+  const startTime = Date.now();
+  try {
+    const { userQuery, chatHistory, userRole } = req.body;
+
+    if (!userQuery || !userQuery.trim()) {
+      return next(new AppError("Query is required for doubt solving", 400));
+    }
+
+    logger.info({ userId: req.user?._id, reqId: req.id }, "Handling doubt solver query");
+
+    const prompt = doubtSolverPrompt({
+      userQuery,
+      chatHistory,
+      userRole,
+    });
+
+    const response = await createChatCompletion({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2500,
+    });
+
+    const reply = response.choices[0].message.content;
+
+    logger.info(
+      { latencyMs: Date.now() - startTime, remainingTokens: req.userTokens, reqId: req.id },
+      "Doubt solved successfully"
+    );
+
+    res.status(200).json({
+      reply,
+      tokensRemaining: req.userTokens,
+      tokensDeducted: req.tokensDeducted || 10,
+    });
+  } catch (error) {
+    logger.error({ error: error.message, latencyMs: Date.now() - startTime, reqId: req.id }, "Doubt solver error");
+    next(error);
+  }
+};
+
+/**
+ * Get current token balance and reset timing for logged-in user
+ */
+const getTokenBalance = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select("tokens tokensLastReset");
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const lastReset = user.tokensLastReset ? new Date(user.tokensLastReset) : now;
+
+    let tokens = user.tokens !== undefined ? user.tokens : 1000;
+    if (now.getTime() - lastReset.getTime() >= THIRTY_DAYS_MS) {
+      tokens = 1000;
+      user.tokens = 1000;
+      user.tokensLastReset = now;
+      await user.save();
+    }
+
+    const nextReset = new Date(lastReset.getTime() + THIRTY_DAYS_MS);
+
+    res.status(200).json({
+      tokens,
+      maxMonthlyTokens: 1000,
+      costPerChat: 10,
+      tokensLastReset: user.tokensLastReset,
+      nextReset,
+    });
+  } catch (error) {
+    logger.error({ error: error.message }, "Get token balance error");
+    next(error);
+  }
+};
+
 module.exports = {
   generateInterviewQuestions,
   generateConceptExplanation,
   evaluateLiveAnswer,
+  chatWithQuestionContext,
+  solveDoubt,
+  getTokenBalance,
 };

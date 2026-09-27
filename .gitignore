@@ -1,32 +1,54 @@
+# ===================================================
 # Environment & Secret Variables (NEVER commit to git)
+# ===================================================
 .env
 .env.*
 !.env.example
 !.env.*.example
-*.env
-*.env.local
-*.env.production
-*.env.development
-*.env.test
+!.env.docker.example
 backend/.env
 frontend/.env
+langgraph-service/.env
 
+# ===================================================
 # Dependencies
+# ===================================================
 node_modules/
 */node_modules/
 
+# ===================================================
+# Python (LangGraph Service)
+# ===================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+langgraph-service/.venv/
+langgraph-service/.pytest_cache/
+.venv/
+.pytest_cache/
+
+# ===================================================
 # Production Build Outputs
+# ===================================================
 dist/
 dist-ssr/
 build/
 */dist/
+*.local
 
+# ===================================================
 # Uploaded media & user files
+# ===================================================
 backend/uploads/*
 !backend/uploads/.gitkeep
 uploads/
 
+# ===================================================
 # Logs & Debugging
+# ===================================================
 logs/
 *.log
 npm-debug.log*
@@ -35,7 +57,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ===================================================
+# Test Coverage
+# ===================================================
+coverage/
+*.lcov
+.nyc_output/
+
+# ===================================================
+# Docker local files
+# ===================================================
+docker-compose.override.yml
+
+# ===================================================
 # OS & Editor generated files
+# ===================================================
 .DS_Store
 .DS_Store?
 ._*
@@ -51,3 +87,18 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# ===================================================
+# Security: Private keys & certificates
+# ===================================================
+*.pem
+*.key
+*.cert
+*.p12
+
+# ===================================================
+# Task & planning files (local only)
+# ===================================================
+todo.md
+todo2.md
+task.md

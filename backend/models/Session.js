@@ -9,6 +9,7 @@ const SessionSchema = new mongoose.Schema(
     experience: { type: Number },
     topicsToFocus: [{ type: String }],
     description: { type: String },
+    trackType: { type: String, enum: ["technical", "hr"], default: "technical" },
     questions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
     attempts: [{
       createdAt: { type: Date, default: Date.now },

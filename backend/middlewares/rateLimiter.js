@@ -153,10 +153,37 @@ const sessionLimiter = rateLimit({
   handler: rateLimitHandler("Too many session operations. Please slow down."),
 });
 
+/**
+ * General purpose rate limiter for read / status queries
+ */
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new ResilientRateLimitStore("general"),
+  handler: rateLimitHandler("Too many requests. Please slow down."),
+});
+
+/**
+ * Strict rate limiter for CPU-intensive sandbox execution
+ */
+const strictLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 15, // 15 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new ResilientRateLimitStore("strict"),
+  handler: rateLimitHandler("Strict execution rate limit reached. Please wait before running again."),
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
   aiLimiter,
   sessionLimiter,
+  generalLimiter,
+  strictLimiter,
   ResilientRateLimitStore,
 };
+

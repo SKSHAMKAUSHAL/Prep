@@ -49,4 +49,5 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+// Dual-export protect function directly and as { protect } for backwards compatibility
+module.exports = Object.assign(protect, { protect, authMiddleware: protect });

@@ -10,13 +10,18 @@ const { TTL } = require("../services/cacheService");
 
 exports.createSession = async (req, res, next) => {
   try {
-    const { role, experience, topicsToFocus, description, questions } = req.body;
+    const { role, experience, topicsToFocus, description, questions, trackType } = req.body;
     const userId = req.user._id;
 
-    logger.info({ userId, role, experience, questionCount: questions?.length }, "Creating new interview session");
+    logger.info({ userId, role, experience, questionCount: questions?.length, trackType }, "Creating new interview session");
 
     const token = crypto.randomBytes(16).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const isHrInferred = /hr|human resource|behavioral|culture fit|leadership|conflict/i.test(
+      `${role || ""} ${topicsToFocus || ""}`
+    );
+    const resolvedTrackType = trackType || (isHrInferred ? "hr" : "technical");
 
     const session = await Session.create({
       user: userId,
@@ -26,6 +31,7 @@ exports.createSession = async (req, res, next) => {
       experience,
       topicsToFocus,
       description,
+      trackType: resolvedTrackType,
     });
 
     const questionDocs = await Promise.all(
