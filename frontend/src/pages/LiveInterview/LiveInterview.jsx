@@ -11,10 +11,8 @@ import { useVoiceTTS } from '../../hooks/useVoiceTTS';
 import { useMicMeter } from '../../hooks/useMicMeter';
 import { useVoiceSTT } from '../../hooks/useVoiceSTT';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useGazeTracker } from '../../hooks/useGazeTracker';
 import AIPresence from './components/AIPresence';
 import SettingsPopover from './components/SettingsPopover';
-import GazeTrackerHUD from './components/GazeTrackerHUD';
 
 const LiveInterview = () => {
   const { sessionId } = useParams();
@@ -27,6 +25,7 @@ const LiveInterview = () => {
 
   const [sessionData, setSessionData] = useState(null);
   const [status, setStatus] = useState('initializing'); // 'initializing' | 'idle' | 'listening' | 'speaking' | 'thinking' | 'finished'
+  const [hasStarted, setHasStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [activeQuestion, setActiveQuestion] = useState('');
   const [timeLeft, setTimeLeft] = useState(parseInt(duration, 10) * 60);
@@ -39,28 +38,10 @@ const LiveInterview = () => {
 
   // 1. WebSocket Streaming Voice Pipeline Hook
   const token = localStorage.getItem('token');
-  const { isConnected, sendInterruption, sendGazeTelemetry } = useWebSocket({
+  const { isConnected, sendInterruption } = useWebSocket({
     token,
     sessionId,
     autoConnect: Boolean(token),
-  });
-
-  // 1b. Browser-Native Behavioral Analysis (MediaPipe Face Mesh & Gaze Tracking)
-  const {
-    videoRef: gazeVideoRef,
-    isCameraActive,
-    faceDetected,
-    gazeDirection,
-    eyeContactScore,
-    isLookingAway,
-    attentionPercentage,
-    distractionCount,
-    startCamera,
-    stopCamera,
-  } = useGazeTracker({
-    sendTelemetryOverWs: sendGazeTelemetry,
-    sampleIntervalMs: 1500,
-    autoStart: false,
   });
 
   // 2. Microphone & Audio Level Meter Hook
@@ -159,9 +140,9 @@ const LiveInterview = () => {
     });
   }, [duration, interviewHistory, navigate, persona, sessionId, stopListening, stopMicStream, stopSpeaking]);
 
-  // Timer Tick
+  // Timer Tick (only ticks once interview has started)
   useEffect(() => {
-    if (status === 'initializing' || status === 'finished') return;
+    if (!hasStarted || status === 'initializing' || status === 'finished') return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -173,7 +154,7 @@ const LiveInterview = () => {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [status, endInterview]);
+  }, [hasStarted, status, endInterview]);
 
   // Handle TTS / Next Question Transition
   const startNextQuestion = useCallback((sessionDataArg, speechPrefix = '', nextQuestionOverride = '') => {
@@ -204,16 +185,28 @@ const LiveInterview = () => {
     });
   }, [endInterview, resetTranscript, speakText, startListening]);
 
-  // Start Live Interview Flow
+  // Start Live Interview Flow (only greets candidate once when user clicks start)
   const startInterview = () => {
-    let intro = 'Welcome to your mock interview. I will now ask you the first question.';
-    if (persona === 'friendly') {
-      intro = "Hi! I'm really glad you're here. Let's jump into your mock interview — I'll be asking you some questions now.";
-    } else if (persona === 'strict') {
-      intro = 'Technical assessment commencing. Answer each question clearly and concisely. First question:';
+    setHasStarted(true);
+    let intro = 'Welcome to your mock interview. I will now ask you the first question:';
+    if (persona === 'friendly' || persona === 'hr') {
+      intro = "Hi! I'm glad you're here today. Let's begin your mock interview with the first question:";
+    } else if (persona === 'strict' || persona === 'system_design') {
+      intro = 'Technical assessment commencing. Please answer clearly and concisely. First question:';
     }
+
+    const questions = sessionData?.questions;
+    const firstQ = (questions && questions[0]?.question) || "Can you introduce yourself and discuss a recent technical project you built?";
+    setActiveQuestion(firstQ);
+    resetTranscript();
+
     setStatus('speaking');
-    speakText(intro, () => startNextQuestion(sessionData));
+    speakText(`${intro} ${firstQ}`, () => {
+      setStatus('idle');
+      setTimeout(() => {
+        startListening();
+      }, 800);
+    });
   };
 
   // Evaluate candidate answer with LLM
@@ -276,7 +269,7 @@ const LiveInterview = () => {
   };
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-  const isInterviewNotStarted = currentQuestionIndex === 0 && status === 'idle' && !transcript;
+  const isInterviewNotStarted = !hasStarted;
 
   if (status === 'initializing') {
     return (
@@ -502,20 +495,6 @@ const LiveInterview = () => {
           </p>
         </div>
       </div>
-
-      {/* Browser-Native Behavioral Vision HUD */}
-      <GazeTrackerHUD
-        videoRef={gazeVideoRef}
-        isCameraActive={isCameraActive}
-        faceDetected={faceDetected}
-        gazeDirection={gazeDirection}
-        eyeContactScore={eyeContactScore}
-        isLookingAway={isLookingAway}
-        attentionPercentage={attentionPercentage}
-        distractionCount={distractionCount}
-        startCamera={startCamera}
-        stopCamera={stopCamera}
-      />
     </div>
   );
 };

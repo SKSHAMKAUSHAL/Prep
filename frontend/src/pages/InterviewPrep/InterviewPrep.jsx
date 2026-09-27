@@ -20,6 +20,7 @@ const InterviewPrep = () => {
   const navigate = useNavigate();
 
   const [sessionData, setSessionData] = useState(null);
+  const [selectedQuestionData, setSelectedQuestionData] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [openLeanMoreDrawer, setOpenLeanMoreDrawer] = useState(false);
   const [explanation, setExplanation] = useState(null);
@@ -171,9 +172,10 @@ const InterviewPrep = () => {
                     index={index}
                     question={data?.question}
                     answer={data?.answer}
-                    onLearnMore={() =>
-                      generateConceptExplanation(data.question)
-                    }
+                    onLearnMore={() => {
+                      setSelectedQuestionData(data);
+                      generateConceptExplanation(data.question);
+                    }}
                     isPinned={data?.isPinned}
                     onTogglePin={() => toggleQuestionPinStatus(data._id)}
                   />
@@ -225,6 +227,9 @@ const InterviewPrep = () => {
               summary={explanation?.summary}
               keyPoints={explanation?.keyPoints}
               questionTitle={explanation?.title}
+              questionText={selectedQuestionData?.question}
+              questionAnswer={selectedQuestionData?.answer}
+              sessionData={sessionData}
             />
           )}
         </Drawer>
@@ -269,6 +274,7 @@ const InterviewPrep = () => {
           isOpen={openSetupModal}
           onClose={() => setOpenSetupModal(false)}
           sessionId={sessionId}
+          sessionData={sessionData}
         />
       </div>
     </DashboardLayout>

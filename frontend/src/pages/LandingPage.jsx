@@ -11,7 +11,6 @@ import Modal from "../components/Modal";
 import ProfileInfoCard from "../components/cards/ProfileInfoCard";
 import { UserContext } from "../context/UserContext";
 import { ThemeContext } from "../context/ThemeContext";
-import HERO_IMG from '../assets/hero-image.png';
 import { motion, AnimatePresence } from "framer-motion";
 
 const LandingPage = () => {
@@ -103,10 +102,10 @@ const LandingPage = () => {
   };
 
   const featureTabs = [
-    { id: 0, title: "1. Tailored Questions", icon: LuBrain, desc: "Personalized questions adapted to your target title, years of experience & core tech stack." },
-    { id: 1, title: "2. Deep Concept Explanations", icon: LuCode, desc: "Instant AI breakdowns of tough questions with architecture models and code snippets." },
-    { id: 2, title: "3. Smart Notes & Pinning", icon: LuPin, desc: "Pin critical questions and annotate them with your personal STAR stories & formulas." },
-    { id: 3, title: "4. Live Voice Mock Engine", icon: LuMic, desc: "Realistic conversational AI that listens, asks dynamic follow-ups, and tests under real conditions." },
+    { id: 0, title: "1. Dedicated Tech & HR Tracks", icon: LuBrain, desc: "Domain-tailored tracks for both deep technical mastery and structured behavioral STAR interviews." },
+    { id: 1, title: "2. Interactive Concept Chat", icon: LuCode, desc: "Chat in real-time with your AI Mentor inside any question with full role and architecture context." },
+    { id: 2, title: "3. 24/7 AI Doubt Solver", icon: LuSparkles, desc: "Debug code bugs, compare system trade-offs, and master algorithm edge cases with monthly tokens." },
+    { id: 3, title: "4. Privacy-First Voice Mocks", icon: LuMic, desc: "High-fidelity AI voice interviews with zero camera or video pressure. Speak naturally and get evaluated." },
     { id: 4, title: "5. Multi-Metric Evaluation", icon: LuTrendingUp, desc: "Granular scoring on technical correctness, speech confidence, and missed edge cases." }
   ];
 
@@ -262,11 +261,8 @@ const LandingPage = () => {
               className="w-full lg:w-1/2 space-y-6 text-center lg:text-left"
             >
               
-              {/* Slick Pill Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/20 text-[var(--color-accent)] text-xs font-semibold">
-
-                <span>Beta</span>
-              </div>
+             
+           
               
               {/* Main Headline */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.12] tracking-tight text-[var(--color-text-primary)]">
@@ -301,53 +297,79 @@ const LandingPage = () => {
 
             </motion.div>
 
-            {/* Right Hero Visual with Slick Floating Badges */}
+            {/* Right Hero Visual: Browser Mockup with Real Product Demo Video */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.96 }}
+              initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7, delay: 0.15 }}
               className="w-full lg:w-1/2 flex justify-center relative"
             >
               <div className="relative w-full max-w-xl">
                 
-                {/* Visual Frame */}
-                <div className="relative z-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
-                  <img 
-                    src={HERO_IMG} 
-                    alt="Prep Dashboard Preview" 
-                    className="w-full h-auto object-cover opacity-95 hover:opacity-100 transition-opacity"
-                  />
+               
+
+            
+
+                {/* Product Video Browser Frame */}
+                <div className="relative z-10 rounded-2xl sm:rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl shadow-indigo-500/10 overflow-hidden">
+                  
+                  {/* Minimal Browser Header Bar */}
+                  <div className="flex items-center px-4 py-2.5 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                    </div>
+                  </div>
+
+                  {/* Video Showcase Container */}
+                  <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
+                    <video 
+                      src="/subject.mp4" 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      className="w-full h-full object-cover select-none pointer-events-none"
+                    />
+
+                    {/* Overlay: Live AI Interview Status Tag */}
+                    <div className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white text-[11px] font-medium pointer-events-none">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
+                      </span>
+                      <span>Live AI Interview</span>
+                    </div>
+
+                    {/* Corner gradient scrim to seamlessly blend watermark area */}
+                    <div className="absolute bottom-0 right-0 w-64 h-36 bg-gradient-to-tl from-black/50 via-black/10 to-transparent pointer-events-none" />
+
+                    {/* Floating Product Status Card (Precisely covers the Gemini AI watermark) */}
+                    <motion.div 
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}
+                      className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-[var(--color-surface)]/95 border border-[var(--color-border)] rounded-xl sm:rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-xl backdrop-blur-md flex items-center gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-lg sm:rounded-xl bg-indigo-500/10 text-[var(--color-accent)] flex items-center justify-center font-bold text-xs sm:text-sm">
+                        9.6
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-1.5">
+                          <span>AI Evaluation</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        </div>
+                        <div className="text-[10px] text-[var(--color-text-muted)] font-medium">
+                          Passed with Distinction
+                        </div>
+                      </div>
+                    </motion.div>
+
+                  </div>
+
                 </div>
 
-                {/* Floating Badge 1: Voice Active */}
-                <motion.div 
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                  className="absolute -top-4 -left-4 z-20 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 shadow-lg flex items-center gap-3 backdrop-blur-md"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                    <LuMic className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-[var(--color-text-primary)]">Live Speech Recognition</div>
-                    <div className="text-[10px] text-emerald-500 font-medium">● 99.4% Accuracy Active</div>
-                  </div>
-                </motion.div>
-
-                {/* Floating Badge 2: Evaluation Score */}
-                <motion.div 
-                  animate={{ y: [0, 6, 0] }}
-                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.5 }}
-                  className="absolute -bottom-4 -right-4 z-20 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 shadow-lg flex items-center gap-3 backdrop-blur-md"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[var(--color-accent-subtle)] text-[var(--color-accent)] flex items-center justify-center font-bold text-sm">
-                    9.6
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-[var(--color-text-primary)]">System Design Score</div>
-                    <div className="text-[10px] text-[var(--color-text-muted)]">Passed with Distinction</div>
-                  </div>
-                </motion.div>
+               
 
               </div>
             </motion.div>

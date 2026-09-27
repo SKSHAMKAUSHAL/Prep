@@ -40,6 +40,8 @@ const registerUser = async (req, res, next) => {
       name: user.name,
       email: user.email,
       profileImageUrl: user.profileImageUrl,
+      tokens: user.tokens ?? 1000,
+      tokensLastReset: user.tokensLastReset,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -71,6 +73,8 @@ const loginUser = async (req, res, next) => {
       name: user.name,
       email: user.email,
       profileImageUrl: user.profileImageUrl,
+      tokens: user.tokens ?? 1000,
+      tokensLastReset: user.tokensLastReset,
       token,
     });
   } catch (error) {
@@ -141,6 +145,8 @@ const updateUserProfile = async (req, res, next) => {
       name: updatedUser.name,
       email: updatedUser.email,
       profileImageUrl: updatedUser.profileImageUrl,
+      tokens: updatedUser.tokens ?? 1000,
+      tokensLastReset: updatedUser.tokensLastReset,
       token: generateToken(updatedUser._id),
     });
   } catch (error) {
@@ -266,6 +272,8 @@ const googleLogin = async (req, res, next) => {
       name: user.name,
       email: user.email,
       profileImageUrl: user.profileImageUrl,
+      tokens: user.tokens ?? 1000,
+      tokensLastReset: user.tokensLastReset,
       token: jwtToken,
     });
   } catch (error) {

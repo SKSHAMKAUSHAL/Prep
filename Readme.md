@@ -1,158 +1,264 @@
-<div align="center">
-  
-# 🎯 Prep
-  
-**The Ultimate AI-Powered Interview Preparation Platform**
+# 🎯 Prep — Enterprise AI Mock Interview & System Design Platform
 
-[![React](https://img.shields.io/badge/React-19.0-blue.svg?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-7.0-purple.svg?style=for-the-badge&logo=vite)](https://vitejs.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-Express-green.svg?style=for-the-badge&logo=nodedotjs)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Database-success.svg?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![AI](https://img.shields.io/badge/AI-Groq%20%7C%20Gemini-orange.svg?style=for-the-badge&logo=openai)](https://groq.com)
+> **Transforming Technical Interview Preparation into an Ultra-Low-Latency, Distributed Simulation Engine**
 
-[Explore Features](#-key-features) • [Quick Start](#-quick-start) • [Tech Stack](#-tech-stack) • [Environment Variables](#-environment-variables)
-
-</div>
+[![React](https://img.shields.io/badge/React-19.1-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-7.0-646CFF?style=flat-square&logo=vite)](https://vitejs.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%20LTS-339933?style=flat-square&logo=nodedotjs)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-5.1-000000?style=flat-square&logo=express)](https://expressjs.com/)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python)](https://python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Redis-7.0-DC382D?style=flat-square&logo=redis)](https://redis.io/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-DC2626?style=flat-square)](https://qdrant.tech/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker)](https://docker.com/)
 
 ---
 
-## 💡 Overview
+## 📖 Table of Contents
 
-**Prep** transforms interview anxiety into confidence. It provides a highly realistic, voice-interactive interview simulator that dynamically adapts to your target role and experience level. By leveraging advanced language models, Prep offers real-time AI feedback, structured learning paths, and actionable insights to help you secure your next offer.
+- [Overview & Architecture](#-overview--architecture)
+- [Key Features](#-key-features)
+- [System Architecture Diagram](#-system-architecture-diagram)
+- [Tech Stack](#-tech-stack)
+- [Folder Structure](#-folder-structure)
+- [Environment Setup & Configuration](#-environment-setup--configuration)
+- [Local Development Quickstart](#-local-development-quickstart)
+- [Docker Deployment Runbook](#-docker-deployment-runbook)
+- [Security Architecture & Asset Protection](#-security-architecture--asset-protection)
+- [Testing Strategy](#-testing-strategy)
+- [Documentation Index](#-documentation-index)
+
+---
+
+## 💡 Overview & Architecture
+
+**Prep** is an enterprise-grade technical interview simulation platform engineered to bridge the gap between candidate preparation and real-world hiring loops at top technology companies.
+
+Traditional interview prep tools are synchronous, text-bound HTTP prototypes. Prep is engineered as a **distributed system**:
+- **Low-Latency Audio Pipeline:** Bidirectional WebSockets with Groq LLM streaming and candidate barge-in interruption handling.
+- **Resilient Caching Topologies:** In-memory Redis cache-aside architecture shielding MongoDB from repetitive read pressure.
+- **Deterministic Multi-Agent State Machine:** LangGraph Python microservice running cyclic Finite State Machines (Interviewer, Evaluator, and Moderator agents) with crash recovery.
+- **RAG Scoring Rubrics:** Qdrant vector database with HNSW indexing, supported by a resilient Node.js local fallback tier.
+- **FinOps Quota Engine:** User token allocation (1,000 monthly tokens) metered transactionally at the API gateway layer.
 
 ---
 
 ## 🚀 Key Features
 
-* 🎙️ **Voice-Interactive Simulator:** Practice your verbal articulation in a high-fidelity, real-time environment. Speak naturally, and the AI will listen, evaluate, and respond.
-* 🧠 **AI-Driven Question Engine:** Dynamic, role-specific questions generated on-the-fly using advanced LLMs (Groq & Gemini), ensuring no two interviews are exactly the same.
-* 📊 **Deep Diagnostics:** Receive comprehensive performance reports, confidence scoring, and qualitative feedback tailored by distinct interviewer personas.
-* 📚 **Centralized Knowledge Hub:** Pin tough questions, organize mock sessions into personalized folders, and access "Understand the Why" deep-dive explanations for complex concepts.
-* 🔒 **Secure & Seamless Authentication:** Robust JWT-based authentication paired with one-click Google OAuth 2.0 integration.
+1. **Modern High-Converting Landing Page:**
+   - Sleek white/light-gray SaaS hero section embedding high-definition demonstration video (`subject.mp4`).
+   - Seamless floating AI evaluation card with dynamic score metrics.
+2. **Redesigned Workspace Dashboard (`/dashboard`):**
+   - Clean, professional information hierarchy.
+   - Dual-domain workspace: **Technical Tracks** (System Design, Backend, Frontend) vs. **HR & Behavioral Rounds** (STAR Mastery, Leadership).
+   - Real-time track metrics (Active Tracks, Q&A Bank, Mocks Completed).
+3. **Dedicated "Ask Query" Technical Copilot (`/ask-query`):**
+   - Integrated into authenticated navbar navigation.
+   - Multi-role context calibration (Distributed Systems, React, Algorithms).
+   - Code snippet attachment drawer supporting 7 languages.
+   - Markdown rendering with Prism syntax highlighting and 1-click Markdown transcript export.
+4. **Interactive Doubt Solver (`/doubt-solver`):**
+   - 24/7 technical mentor with structured question diagnosis and token-metered query execution.
+5. **Live Voice Mock Simulation (`/interview/:id/live`):**
+   - Full-duplex speech-to-text (STT) and text-to-speech (TTS) with audio level metering and real-time rubric evaluation.
+6. **Authentication & Security:**
+   - One-click Google OAuth 2.0 registration on `/signup`.
+   - Dual login (Email/Password + Google) on `/login`.
+   - Client route protection via session-verified `<ProtectedRoute>`.
+
+---
+
+## 🏛️ System Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph Client["Frontend Client (React 19 + Vite 7)"]
+        LP[Landing Page with Video Hero]
+        Auth[Google OAuth 2.0 / JWT]
+        Dash[Redesigned Dashboard Workspace]
+        Ask[Dedicated Ask Query Copilot]
+        Doubt[Doubt Solver Assistant]
+        Live[Live Interview Voice Engine]
+    end
+
+    subgraph API["API Gateway & Services (Node.js 22 + Express 5)"]
+        MW[Security Middlewares: Helmet, RateLimiter, Zod]
+        TM[Token Metering: 1000/mo Quota]
+        WS[WebSocket Real-Time Gateway /ws/interview]
+        Cache[Redis Cache-Aside Service]
+        RAGResilient[Resilient Local Rubrics Tier]
+    end
+
+    subgraph Microservices["AI Orchestration (Python 3.12 FastAPI)"]
+        FSM[LangGraph Cyclic Multi-Agent DAG]
+        Agents[Interviewer + Evaluator + Moderator]
+    end
+
+    subgraph Storage["Persistence & Caching Tier"]
+        Mongo[(MongoDB Atlas Persistent Store)]
+        Redis[(Redis Cloud / Local In-Memory Cache & Queues)]
+        Qdrant[(Qdrant Vector Database - Rubrics HNSW)]
+    end
+
+    Client -->|HTTP REST API| API
+    Client -->|WebSocket Duplex| WS
+    API --> Mongo
+    API --> Redis
+    API -->|Microservice RPC| Microservices
+    API -->|Fallback Resilient Tier| RAGResilient
+    Microservices --> Qdrant
+```
 
 ---
 
 ## 🏗️ Tech Stack
 
-### Frontend
-* **Core:** React, Vite
-* **Styling & UI:** Tailwind CSS, Framer Motion
-* **Routing & State:** React Router DOM, Context API
-* **Other Tools:** React Markdown, React Icons
-
-### Backend
-* **Core:** Node.js, Express.js
-* **Database:** MongoDB, Mongoose
-* **Authentication:** JSON Web Tokens (JWT), Google Auth Library
-* **AI Integration:** Groq SDK, Google Gemini
+| Domain | Technologies |
+|---|---|
+| **Frontend** | React 19.1, Vite 7.0, Tailwind CSS 4.1, Framer Motion 12.38, React Router 7.6, Prism Highlighter |
+| **Backend Gateway** | Node.js 22 LTS, Express 5.1, Mongoose 8.16, ioredis 6.0, BullMQ 6.3, Multer 2.0, Zod 4.6, Pino 10.3 |
+| **Microservice & AI** | Python 3.12, FastAPI, LangGraph, Qdrant Client, Groq SDK |
+| **DevOps & Infra** | Docker Multi-Stage (Alpine), Docker Compose, Nginx 1.27 Alpine, Redis 7, MongoDB 7 |
 
 ---
 
-## ⚡ Quick Start
+## 📂 Folder Structure
 
-Follow these steps to set up the project locally on your machine.
-
-### 1. Prerequisites
-* [Node.js](https://nodejs.org/en/) (v18 or higher recommended)
-* [MongoDB](https://www.mongodb.com/) (Local instance or Atlas URI)
-* API Keys for **Groq** and a **Google OAuth Client ID**
-
-### 2. Clone the Repository
-```bash
-git clone https://github.com/SKSHAMKAUSHAL/Prep.git
-cd Prep
-```
-
-### 3. Install Dependencies
-You need to install dependencies for both the frontend and the backend.
-
-```bash
-# Install backend dependencies
-cd backend
-npm install
-
-# Install frontend dependencies
-cd ../frontend
-npm install
+```text
+Prep/
+├── backend/                  # Node.js Express 5 API Gateway
+│   ├── config/               # DB connection & Redis singleton
+│   ├── controllers/          # Business logic (Auth, AI, Sessions, Questions)
+│   ├── middlewares/          # JWT protect, rate limiting, token deduct, Zod validate
+│   ├── models/               # Mongoose schemas (User, Session, Question)
+│   ├── routes/               # API route definitions
+│   ├── services/             # CacheService, RAGService, StreamingAIService
+│   ├── test/                 # 50 Automated unit & integration tests
+│   ├── validators/           # Zod validation schemas
+│   └── websocket/            # WebSocket connection manager & streaming server
+│
+├── frontend/                 # React 19 + Vite SPA Client
+│   ├── public/               # Static assets & marketing video (subject.mp4)
+│   └── src/
+│       ├── components/       # Reusable cards, modals, layout bars, ProtectedRoute
+│       ├── context/          # UserContext, ThemeContext
+│       ├── pages/            # LandingPage, Dashboard, AskQuery, DoubtSolver, LiveInterview
+│       └── utils/            # Axios instance, API route constants, image uploaders
+│
+├── langgraph-service/        # Python 3.12 FastAPI Multi-Agent Microservice
+│   └── app/                  # FSM graph nodes, agents, Qdrant RAG router
+│
+└── docs/                     # Comprehensive Engineering Documentation
+    ├── ENVIRONMENT.md        # Complete environment variable inventory
+    ├── SECURITY_AUDIT.md     # Security audit findings & vulnerability register
+    ├── ASSET_SECURITY.md     # Client asset classification & network boundaries
+    ├── DOCKER_RUNBOOK.md     # Docker operations & production deployment runbook
+    ├── TESTING_CHECKLIST.md  # Automated vs manual testing checklist & release gates
+    ├── PROJECT_AUDIT.md      # Full architecture audit report & technical debt
+    └── ATS_RESUME_GUIDE.md   # ATS-optimized STAR resume bullets & metrics
 ```
 
 ---
 
-## 🔐 Environment Variables
+## 🔐 Environment Setup & Configuration
 
-Create a `.env` file in **both** the `frontend` and `backend` directories.
+Refer to [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for full variable reference.
 
-### `backend/.env`
+### 1. Backend (`backend/.env`)
 ```env
 PORT=9000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_super_secret_jwt_key
+NODE_ENV=development
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/prep
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_64_character_hex_secret_here
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-GROQ_API_KEY=your_groq_api_key
+GROQ_API_KEY=your_groq_api_key_here
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:80
+LANGGRAPH_SERVICE_URL=http://localhost:8001
 ```
 
-### `frontend/.env`
+### 2. Frontend (`frontend/.env`)
 ```env
 VITE_BACKEND_URL=http://localhost:9000
 VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 ```
-> **Note:** Ensure `VITE_GOOGLE_CLIENT_ID` exactly matches the `GOOGLE_CLIENT_ID` in your backend.
 
 ---
 
-## 🏃‍♂️ Running the Platform
+## 🏃‍♂️ Local Development Quickstart
 
-Once your environment variables are configured, start the development servers.
-
-**Terminal 1 (Backend):**
+### Step 1: Install Dependencies
 ```bash
-cd backend
-npm run dev
+# Backend dependencies
+cd backend && npm install
+
+# Frontend dependencies
+cd ../frontend && npm install
 ```
 
-**Terminal 2 (Frontend):**
+### Step 2: Run Development Servers
 ```bash
-cd frontend
-npm run dev
+# Terminal 1 - Backend Server (Port 9000)
+cd backend && npm run dev
+
+# Terminal 2 - Frontend Client (Port 5173)
+cd frontend && npm run dev
 ```
 
-The application will be available at **`http://localhost:5173`**.
+Visit **`http://localhost:5173`** in your browser.
 
 ---
 
-## 📂 Project Structure
+## 🐳 Docker Deployment Runbook
 
-```text
-Prep/
-├── backend/                  # Express server & API routes
-│   ├── config/               # Database and configuration files
-│   ├── controllers/          # API endpoint logic (Auth, AI, Sessions)
-│   ├── middlewares/          # Custom middlewares (JWT verification)
-│   ├── models/               # Mongoose schemas
-│   └── routes/               # API route definitions
-│
-└── frontend/                 # React frontend application
-    ├── public/               # Static assets
-    └── src/
-        ├── components/       # Reusable UI components
-        ├── context/          # React Context (Theme, User State)
-        ├── pages/            # Application pages (Landing, Dashboard, Prep)
-        └── utils/            # Helper functions and Axios config
+Deploy the entire 6-container production stack with one command:
+
+```bash
+# 1. Prepare Docker environment
+cp .env.docker.example .env.docker
+
+# 2. Build and launch all services
+docker compose up -d --build
+
+# 3. Verify container health
+docker compose ps
 ```
+
+Detailed commands, volume operations, and troubleshooting available in [`docs/DOCKER_RUNBOOK.md`](docs/DOCKER_RUNBOOK.md).
 
 ---
 
-## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](../../issues).
+## 🧪 Testing Strategy
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Run the complete automated test suite:
+
+```bash
+# Run backend test suite (50 automated tests)
+cd backend && npm test
+
+# Verify frontend production build
+cd ../frontend && npm run build
+```
+
+Full smoke test checklist, security tests, and release gates are documented in [`docs/TESTING_CHECKLIST.md`](docs/TESTING_CHECKLIST.md).
+
+---
+
+## 📚 Documentation Index
+
+| Document | Purpose |
+|---|---|
+| [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Exhaustive environment variable inventory and safety rules |
+| [`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md) | Security findings, vulnerability matrix, and remediations |
+| [`docs/ASSET_SECURITY.md`](docs/ASSET_SECURITY.md) | Asset classification, IDOR defense, and DevTools boundaries |
+| [`docs/DOCKER_RUNBOOK.md`](docs/DOCKER_RUNBOOK.md) | Multi-stage Docker operations and container management |
+| [`docs/TESTING_CHECKLIST.md`](docs/TESTING_CHECKLIST.md) | 5-minute minimum release test & automated test coverage |
+| [`docs/PROJECT_AUDIT.md`](docs/PROJECT_AUDIT.md) | Complete audit report separating fixed items and future roadmap |
+| [`docs/ATS_RESUME_GUIDE.md`](docs/ATS_RESUME_GUIDE.md) | STAR-format resume bullet points, FAANG metrics, and project summary |
 
 ---
 
 <div align="center">
-  <i>Built to help you land the job you deserve.</i>
+  <b>Built for Engineers, by Engineers.</b>
 </div>

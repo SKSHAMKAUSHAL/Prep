@@ -7,6 +7,8 @@ const UserSchema = new mongoose.Schema(
     password: { type: String }, // Optional for Google Auth users
     googleId: { type: String, unique: true, sparse: true }, // Optional, sparse allows multiple nulls
     profileImageUrl: { type: String, default: null },
+    tokens: { type: Number, default: 1000 },
+    tokensLastReset: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

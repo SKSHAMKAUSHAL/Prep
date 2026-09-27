@@ -8,13 +8,15 @@ import Dashboard from "./pages/Home/Dashboard";
 import InterviewPrep from "./pages/InterviewPrep/InterviewPrep";
 import LiveInterview from "./pages/LiveInterview/LiveInterview";
 import FeedbackReport from "./pages/LiveInterview/FeedbackReport";
+import DoubtSolver from "./pages/DoubtSolver/DoubtSolver";
+import AskQuery from "./pages/Query/AskQuery";
 import NotFound from "./pages/NotFound/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const AuthWrapper = ({ children }) => {
   return (
     <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-4 transition-colors duration-200">
-      <div className="w-full max-w-sm bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-lg overflow-hidden">
+      <div className="w-full max-w-sm bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-lg max-h-[92vh] overflow-y-auto">
         {children}
       </div>
     </div>
@@ -63,6 +65,30 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <FeedbackReport />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/doubt-solver" 
+            element={
+              <ProtectedRoute>
+                <DoubtSolver />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/ask-query" 
+            element={
+              <ProtectedRoute>
+                <AskQuery />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/query" 
+            element={
+              <ProtectedRoute>
+                <AskQuery />
               </ProtectedRoute>
             } 
           />
