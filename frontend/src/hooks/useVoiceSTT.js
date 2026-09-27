@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 export const useVoiceSTT = ({
   language = 'en-IN',
   onListeningStateChange,
+  onSpeechStart,
   ensureMicAccess,
   refreshMicStream,
   resumeAudioContext,
@@ -156,6 +157,7 @@ export const useVoiceSTT = ({
     recognition.onspeechstart = () => {
       heardSpeechRef.current = true;
       noSpeechRetryRef.current = 0;
+      if (onSpeechStart) onSpeechStart();
     };
 
     recognition.onresult = (event) => {
