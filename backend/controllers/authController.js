@@ -1,18 +1,26 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
+const { OAuth2Client } = require("google-auth-library");
+const logger = require("../utils/logger");
+const { AppError } = require("../middlewares/errorHandler");
+const cacheService = require("../services/cacheService");
+const { TTL } = require("../services/cacheService");
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
   try {
     const { name, email, password, profileImageUrl } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return next(new AppError("User already exists with this email address", 400));
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -25,6 +33,8 @@ const registerUser = async (req, res) => {
       profileImageUrl,
     });
 
+    logger.info({ userId: user._id, email: user.email }, "New user registered successfully");
+
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -33,76 +43,86 @@ const registerUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    logger.error({ error: error.message }, "Registration error");
+    next(error);
   }
 };
 
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    console.log("User found:", !!user);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
 
-    if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect password" });
+    if (!user) {
+      return next(new AppError("Invalid email or password", 401));
     }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      logger.warn({ email }, "Failed login attempt: incorrect password");
+      return next(new AppError("Invalid email or password", 401));
+    }
+
     const token = generateToken(user._id);
-    console.log("Generated token:", token);
+    logger.info({ userId: user._id }, "User logged in successfully");
 
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       profileImageUrl: user.profileImageUrl,
-      token: token,
+      token,
     });
-
   } catch (error) {
-    console.error("💥 LOGIN ERROR:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    logger.error({ error: error.message }, "Login error");
+    next(error);
   }
 };
 
-const getUserProfile = async (req, res) => {
+const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const userId = req.user.id || req.user._id;
+    const cacheKey = `user:profile:${userId}`;
+
+    const user = await cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        return User.findById(userId).select("-password").lean();
+      },
+      TTL.USER_PROFILE
+    );
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError("User not found", 404));
     }
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    logger.error({ error: error.message, userId: req.user?.id }, "Get user profile error");
+    next(error);
   }
 };
 
-const updateUserProfile = async (req, res) => {
+const updateUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
-
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError("User not found", 404));
     }
 
     const { name, email, password, profileImageUrl } = req.body;
 
-    // Check if email is being changed and it's not taken
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
-        return res.status(400).json({ message: "Email already in use" });
+        return next(new AppError("Email already in use", 400));
       }
       user.email = email;
     }
 
-    // Update fields if provided
     if (name) user.name = name;
-    if (profileImageUrl) user.profileImageUrl = profileImageUrl;
+    if (profileImageUrl !== undefined) user.profileImageUrl = profileImageUrl;
 
     if (password && password.length >= 6) {
       const salt = await bcrypt.genSalt(10);
@@ -110,6 +130,11 @@ const updateUserProfile = async (req, res) => {
     }
 
     const updatedUser = await user.save();
+    
+    // Invalidate user profile cache on update
+    await cacheService.del(`user:profile:${updatedUser._id}`);
+
+    logger.info({ userId: updatedUser._id }, "User profile updated successfully");
 
     res.json({
       _id: updatedUser._id,
@@ -119,22 +144,17 @@ const updateUserProfile = async (req, res) => {
       token: generateToken(updatedUser._id),
     });
   } catch (error) {
-    console.error("PROFILE UPDATE ERROR:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    logger.error({ error: error.message, userId: req.user?.id }, "Profile update error");
+    next(error);
   }
 };
 
-const { OAuth2Client } = require('google-auth-library');
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-const axios = require('axios');
-
-const googleLogin = async (req, res) => {
+const googleLogin = async (req, res, next) => {
   try {
     const { token } = req.body;
-    
+
     if (!token) {
-      return res.status(400).json({ message: "Token is required for Google login" });
+      return next(new AppError("Token is required for Google login", 400));
     }
 
     let googleId = null;
@@ -143,7 +163,7 @@ const googleLogin = async (req, res) => {
     let profileImageUrl = null;
 
     // 1. Check if token is a JWT (ID Token)
-    if (typeof token === 'string' && token.split('.').length === 3) {
+    if (typeof token === "string" && token.split(".").length === 3) {
       try {
         const ticket = await client.verifyIdToken({
           idToken: token,
@@ -155,7 +175,7 @@ const googleLogin = async (req, res) => {
         name = payload.name || payload.given_name;
         profileImageUrl = payload.picture;
       } catch (jwtErr) {
-        console.warn("JWT verification failed, falling back to decoding / userinfo:", jwtErr.message);
+        logger.warn({ error: jwtErr.message }, "JWT verification failed, falling back to decoding / userinfo");
         const decoded = jwt.decode(token);
         if (decoded && (decoded.email || decoded.sub)) {
           googleId = decoded.sub;
@@ -166,11 +186,11 @@ const googleLogin = async (req, res) => {
       }
     }
 
-    // 2. If not obtained via JWT, fetch from Google userinfo endpoint using access token
+    // 2. Fallback to Google userinfo endpoint using access token
     if (!email && !googleId) {
       try {
-        const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${token}` }
+        const googleResponse = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = googleResponse.data;
         googleId = data.sub || data.id;
@@ -178,10 +198,9 @@ const googleLogin = async (req, res) => {
         name = data.name || data.given_name;
         profileImageUrl = data.picture;
       } catch (axiosErr1) {
-        // Fallback to v2 userinfo endpoint
         try {
-          const googleResponseV2 = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: { Authorization: `Bearer ${token}` }
+          const googleResponseV2 = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: { Authorization: `Bearer ${token}` },
           });
           const data = googleResponseV2.data;
           googleId = data.id || data.sub;
@@ -189,25 +208,20 @@ const googleLogin = async (req, res) => {
           name = data.name || data.given_name;
           profileImageUrl = data.picture;
         } catch (axiosErr2) {
-          console.error("Google userinfo fetch failed:", axiosErr1.response?.data || axiosErr1.message);
-          return res.status(401).json({ 
-            message: "Invalid or expired Google token", 
-            details: axiosErr1.response?.data || axiosErr1.message 
-          });
+          logger.error({ error: axiosErr1.message }, "Google userinfo fetch failed");
+          return next(new AppError("Invalid or expired Google authentication token", 401));
         }
       }
     }
 
     if (!email) {
-      return res.status(400).json({ message: "Unable to retrieve email from Google profile" });
+      return next(new AppError("Unable to retrieve email from Google profile", 400));
     }
 
-    // Fallback for name if not provided
     if (!name) {
-      name = email.split('@')[0];
+      name = email.split("@")[0];
     }
 
-    // Check if user exists by email or googleId safely
     const query = [];
     if (email) query.push({ email });
     if (googleId) query.push({ googleId });
@@ -215,7 +229,6 @@ const googleLogin = async (req, res) => {
     let user = await User.findOne({ $or: query });
 
     if (!user) {
-      // Create new user
       const newUserData = {
         name,
         email,
@@ -224,6 +237,7 @@ const googleLogin = async (req, res) => {
       if (googleId) newUserData.googleId = googleId;
 
       user = await User.create(newUserData);
+      logger.info({ userId: user._id, email: user.email }, "Created new user via Google login");
     } else {
       let needsSave = false;
       if (googleId && !user.googleId) {
@@ -240,10 +254,11 @@ const googleLogin = async (req, res) => {
       }
       if (needsSave) {
         await user.save();
+        await cacheService.del(`user:profile:${user._id}`);
       }
+      logger.info({ userId: user._id }, "Existing user logged in via Google");
     }
 
-    // Generate JWT token
     const jwtToken = generateToken(user._id);
 
     return res.status(200).json({
@@ -253,14 +268,16 @@ const googleLogin = async (req, res) => {
       profileImageUrl: user.profileImageUrl,
       token: jwtToken,
     });
-
   } catch (error) {
-    console.error("💥 GOOGLE LOGIN ERROR:", error);
-    return res.status(500).json({
-      message: "Server error during Google login",
-      error: error.message
-    });
+    logger.error({ error: error.message }, "Google login error");
+    next(error);
   }
 };
 
-module.exports = { registerUser, loginUser, googleLogin, getUserProfile, updateUserProfile };
+module.exports = {
+  registerUser,
+  loginUser,
+  googleLogin,
+  getUserProfile,
+  updateUserProfile,
+};
