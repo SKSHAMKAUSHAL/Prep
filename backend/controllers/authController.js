@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
@@ -8,7 +9,10 @@ const { AppError } = require("../middlewares/errorHandler");
 const cacheService = require("../services/cacheService");
 const { TTL } = require("../services/cacheService");
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const getOAuthClient = () => {
+  const cid = process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.trim() : undefined;
+  return new OAuth2Client(cid);
+};
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -163,32 +167,35 @@ const googleLogin = async (req, res, next) => {
       return next(new AppError("Token is required for Google login", 400));
     }
 
+    if (mongoose.connection.readyState !== 1 && process.env.NODE_ENV !== "test") {
+      logger.error("MongoDB not ready during Google login");
+      return next(new AppError("Database is currently reconnecting. Please try again shortly.", 503));
+    }
+
     let googleId = null;
     let email = null;
     let name = null;
     let profileImageUrl = null;
 
+    const clientId = process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.trim() : undefined;
+
     // 1. Check if token is a JWT (ID Token)
     if (typeof token === "string" && token.split(".").length === 3) {
       try {
-        const ticket = await client.verifyIdToken({
+        const authClient = getOAuthClient();
+        const ticket = await authClient.verifyIdToken({
           idToken: token,
-          audience: process.env.GOOGLE_CLIENT_ID,
+          audience: clientId,
         });
         const payload = ticket.getPayload();
-        googleId = payload.sub;
-        email = payload.email;
-        name = payload.name || payload.given_name;
-        profileImageUrl = payload.picture;
-      } catch (jwtErr) {
-        logger.warn({ error: jwtErr.message }, "JWT verification failed, falling back to decoding / userinfo");
-        const decoded = jwt.decode(token);
-        if (decoded && (decoded.email || decoded.sub)) {
-          googleId = decoded.sub;
-          email = decoded.email;
-          name = decoded.name || decoded.given_name;
-          profileImageUrl = decoded.picture;
+        if (payload) {
+          googleId = payload.sub;
+          email = payload.email;
+          name = payload.name || payload.given_name;
+          profileImageUrl = payload.picture;
         }
+      } catch (jwtErr) {
+        logger.warn({ error: jwtErr.message }, "ID Token verification failed, checking userinfo endpoint");
       }
     }
 
@@ -197,6 +204,7 @@ const googleLogin = async (req, res, next) => {
       try {
         const googleResponse = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
           headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
         });
         const data = googleResponse.data;
         googleId = data.sub || data.id;
@@ -207,6 +215,7 @@ const googleLogin = async (req, res, next) => {
         try {
           const googleResponseV2 = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
             headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000,
           });
           const data = googleResponseV2.data;
           googleId = data.id || data.sub;
@@ -214,8 +223,8 @@ const googleLogin = async (req, res, next) => {
           name = data.name || data.given_name;
           profileImageUrl = data.picture;
         } catch (axiosErr2) {
-          logger.error({ error: axiosErr1.message }, "Google userinfo fetch failed");
-          return next(new AppError("Invalid or expired Google authentication token", 401));
+          logger.error({ error: axiosErr2.message || axiosErr1.message }, "Google userinfo fetch failed");
+          return next(new AppError("Invalid or expired Google authentication token. Please try again.", 401));
         }
       }
     }
@@ -242,8 +251,16 @@ const googleLogin = async (req, res, next) => {
       };
       if (googleId) newUserData.googleId = googleId;
 
-      user = await User.create(newUserData);
-      logger.info({ userId: user._id, email: user.email }, "Created new user via Google login");
+      try {
+        user = await User.create(newUserData);
+        logger.info({ userId: user._id, email: user.email }, "Created new user via Google login");
+      } catch (createErr) {
+        if (createErr.code === 11000) {
+          user = await User.findOne({ $or: query });
+        } else {
+          throw createErr;
+        }
+      }
     } else {
       let needsSave = false;
       if (googleId && !user.googleId) {
@@ -263,6 +280,10 @@ const googleLogin = async (req, res, next) => {
         await cacheService.del(`user:profile:${user._id}`);
       }
       logger.info({ userId: user._id }, "Existing user logged in via Google");
+    }
+
+    if (!user) {
+      return next(new AppError("Failed to retrieve or create user profile", 500));
     }
 
     const jwtToken = generateToken(user._id);

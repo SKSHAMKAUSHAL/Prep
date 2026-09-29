@@ -113,6 +113,7 @@ const apiLimiter = rateLimit({
   max: 300, // Limit each IP to 300 requests per 15 minutes
   standardHeaders: true, // Return standard `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  skip: (req) => req.method === "OPTIONS",
   store: new ResilientRateLimitStore("api"),
   handler: rateLimitHandler("Too many requests from this IP. Please try again after 15 minutes."),
 });
@@ -125,6 +126,7 @@ const authLimiter = rateLimit({
   max: 30, // 30 attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   store: new ResilientRateLimitStore("auth"),
   handler: rateLimitHandler("Too many authentication attempts. Please try again after 15 minutes."),
 });

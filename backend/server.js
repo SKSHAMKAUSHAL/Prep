@@ -62,8 +62,89 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
+
+// CORS configuration
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://localhost:9000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "https://prep-ecru.vercel.app",
+];
+
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+      .map((o) => o.trim().replace(/^["']|["']$/g, "").replace(/\/+$/, ""))
+      .filter(Boolean)
+  : [];
+
+if (process.env.FRONTEND_URL) {
+  envOrigins.push(process.env.FRONTEND_URL.trim().replace(/^["']|["']$/g, "").replace(/\/+$/, ""));
+}
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // Allow non-browser requests (Postman, curl, server-to-server)
+  const normalized = origin.trim().replace(/\/+$/, "");
+
+  // Exact match or wildcard
+  if (allowedOrigins.includes("*") || allowedOrigins.includes(normalized)) {
+    return true;
+  }
+
+  // Allow any Vercel deployment of this project (e.g., prep-ecru.vercel.app, prep-git-*.vercel.app)
+  if (/^https:\/\/(prep[a-zA-Z0-9_-]*|.*\.prep[a-zA-Z0-9_-]*)\.vercel\.app$/.test(normalized)) {
+    return true;
+  }
+
+  // In development, allow any localhost or 127.0.0.1 port
+  if (process.env.NODE_ENV !== "production") {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalized)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+    logger.warn({ origin }, "Blocked by CORS policy");
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Request-Id",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
+  ],
+  exposedHeaders: [
+    "X-Request-Id",
+    "RateLimit-Limit",
+    "RateLimit-Remaining",
+    "RateLimit-Reset",
+  ],
+  optionsSuccessStatus: 200,
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
 
 // Prevent HTTP Parameter Pollution attacks
 app.use(hpp());
@@ -86,37 +167,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://localhost:9000",
-      "http://127.0.0.1:5173",
-    ];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
-        return callback(null, true);
-      }
-      return callback(new AppError(`CORS policy does not allow access from ${origin}`, 403));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
-    exposedHeaders: ["X-Request-Id", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"],
-  })
-);
-
 // Body Parsers with payload limits
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Connect to MongoDB and Redis
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && require.main !== module) {
   connectDB();
   connectRedis();
 }
@@ -213,41 +269,62 @@ let server;
 
 if (require.main === module) {
   // Start server
-  server = app.listen(PORT, () => {
-    logger.info(`Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`);
-    initWebSocketServer(server);
-    startWorkers();
-  });
+  const startServer = async () => {
+    try {
+      if (process.env.NODE_ENV !== "test") {
+        await connectDB();
+        await connectRedis();
+      }
+
+      server = app.listen(PORT, () => {
+        logger.info(`Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`);
+        initWebSocketServer(server);
+        startWorkers();
+      });
+    } catch (err) {
+      logger.fatal({ err: err.message }, "Server startup error");
+      process.exit(1);
+    }
+  };
+
+  startServer();
 
   // Graceful shutdown handling
-  const gracefulShutdown = (signal) => {
+  const gracefulShutdown = async (signal) => {
     logger.info({ signal }, `Received ${signal}. Starting graceful shutdown...`);
 
-    server.close(async () => {
-      logger.info("HTTP server closed to new requests.");
-      try {
-        await closeWebSocketServer();
-        await stopWorkers();
-        await queueService.closeQueues();
-        await closeRedis();
+    try {
+      await closeWebSocketServer();
+      await stopWorkers();
+      await queueService.closeQueues();
+      await closeRedis();
+      if (mongoose.connection.readyState !== 0) {
         await mongoose.connection.close(false);
-        logger.info("WebSocket, Queues, Database and Redis connections closed cleanly.");
-        process.exit(0);
-      } catch (err) {
-        logger.error({ err: err.message }, "Error during cleanup/disconnection");
-        process.exit(1);
       }
-    });
+      logger.info("WebSocket, Queues, Database and Redis connections closed cleanly.");
+    } catch (err) {
+      logger.error({ err: err.message }, "Error during cleanup/disconnection");
+    }
 
-    // Force shutdown after 10 seconds if graceful drain fails
-    setTimeout(() => {
-      logger.error("Forcefully terminating process after shutdown timeout.");
-      process.exit(1);
-    }, 10000).unref();
+    if (server) {
+      if (typeof server.closeAllConnections === "function") {
+        server.closeAllConnections();
+      }
+      server.close(() => {
+        logger.info("HTTP server closed cleanly.");
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
   };
 
   process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+  process.once("SIGUSR2", async () => {
+    await gracefulShutdown("SIGUSR2");
+    process.kill(process.pid, "SIGUSR2");
+  });
 
   // Global process exception safety nets
   process.on("uncaughtException", (err) => {
@@ -257,9 +334,11 @@ if (require.main === module) {
 
   process.on("unhandledRejection", (err) => {
     logger.fatal({ err: err?.message || err, stack: err?.stack }, "Unhandled Rejection! Shutting down...");
-    server.close(() => {
+    if (server) {
+      server.close(() => process.exit(1));
+    } else {
       process.exit(1);
-    });
+    }
   });
 }
 

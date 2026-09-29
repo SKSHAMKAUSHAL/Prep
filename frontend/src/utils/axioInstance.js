@@ -30,7 +30,18 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response) {
       if (error.response.status === 401) {
-        window.location.href = "/";
+        const isAuthEndpoint =
+          error.config?.url?.includes("/api/auth/login") ||
+          error.config?.url?.includes("/api/auth/register") ||
+          error.config?.url?.includes("/api/auth/google");
+
+        if (!isAuthEndpoint) {
+          localStorage.removeItem("token");
+          const publicPaths = ["/", "/login", "/signup"];
+          if (!publicPaths.includes(window.location.pathname)) {
+            window.location.href = "/";
+          }
+        }
       } else if (error.response.status === 500) {
         console.error("Server error. Please try again later.");
       }
