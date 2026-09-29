@@ -9,7 +9,10 @@ const { AppError } = require("../middlewares/errorHandler");
 const cacheService = require("../services/cacheService");
 const { TTL } = require("../services/cacheService");
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const getOAuthClient = () => {
+  const cid = process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.trim() : undefined;
+  return new OAuth2Client(cid);
+};
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -179,7 +182,8 @@ const googleLogin = async (req, res, next) => {
     // 1. Check if token is a JWT (ID Token)
     if (typeof token === "string" && token.split(".").length === 3) {
       try {
-        const ticket = await client.verifyIdToken({
+        const authClient = getOAuthClient();
+        const ticket = await authClient.verifyIdToken({
           idToken: token,
           audience: clientId,
         });

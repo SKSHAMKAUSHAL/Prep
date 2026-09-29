@@ -63,8 +63,88 @@ app.use(
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
+
+// CORS configuration
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://localhost:9000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "https://prep-ecru.vercel.app",
+];
+
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+      .map((o) => o.trim().replace(/^["']|["']$/g, "").replace(/\/+$/, ""))
+      .filter(Boolean)
+  : [];
+
+if (process.env.FRONTEND_URL) {
+  envOrigins.push(process.env.FRONTEND_URL.trim().replace(/^["']|["']$/g, "").replace(/\/+$/, ""));
+}
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // Allow non-browser requests (Postman, curl, server-to-server)
+  const normalized = origin.trim().replace(/\/+$/, "");
+
+  // Exact match or wildcard
+  if (allowedOrigins.includes("*") || allowedOrigins.includes(normalized)) {
+    return true;
+  }
+
+  // Allow any Vercel deployment of this project (e.g., prep-ecru.vercel.app, prep-git-*.vercel.app)
+  if (/^https:\/\/(prep[a-zA-Z0-9_-]*|.*\.prep[a-zA-Z0-9_-]*)\.vercel\.app$/.test(normalized)) {
+    return true;
+  }
+
+  // In development, allow any localhost or 127.0.0.1 port
+  if (process.env.NODE_ENV !== "production") {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalized)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+    logger.warn({ origin }, "Blocked by CORS policy");
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Request-Id",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
+  ],
+  exposedHeaders: [
+    "X-Request-Id",
+    "RateLimit-Limit",
+    "RateLimit-Remaining",
+    "RateLimit-Reset",
+  ],
+  optionsSuccessStatus: 200,
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
 
 // Prevent HTTP Parameter Pollution attacks
 app.use(hpp());
@@ -86,50 +166,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// CORS configuration
-const defaultOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:3000",
-  "http://localhost:9000",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  "https://prep-ecru.vercel.app",
-];
-
-const envOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : [];
-
-const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
-
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
-  if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) return true;
-  // In development, allow any localhost or 127.0.0.1 port
-  if (process.env.NODE_ENV !== "production") {
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return true;
-    }
-  }
-  return false;
-};
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (isAllowedOrigin(origin)) {
-        return callback(null, true);
-      }
-      return callback(new AppError(`CORS policy does not allow access from ${origin}`, 403));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
-    exposedHeaders: ["X-Request-Id", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"],
-  })
-);
 
 // Body Parsers with payload limits
 app.use(express.json({ limit: "1mb" }));
